@@ -1,0 +1,1648 @@
+/* Layout fedele al riferimento: le altezze e le larghezze vengono dai token
+   misurati sugli screenshot (--h-titlebar, --h-ribbon, --w-sidebar, --h-row, ...). */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--window-bg);
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  /* Dimensione del testo dell'interfaccia (blocco P): `--ui-scala-testo` è un
+     numero (1 = normale). `zoom` scala tutta l'interfaccia e le misure in
+     `vw/vh` vengono divise per la stessa scala, così la finestra resta piena.
+     Se `zoom` non fosse supportato, il valore `1` di ripiego non cambia nulla. */
+  zoom: var(--ui-scala-testo, 1);
+  width: 100vw;
+  width: calc(100vw / var(--ui-scala-testo, 1));
+  height: 100vh;
+  height: calc(100vh / var(--ui-scala-testo, 1));
+  background: var(--window-bg);
+}
+
+/* ---------- barra del titolo ---------- */
+.titlebar {
+  flex: 0 0 auto;
+  height: var(--h-titlebar);
+  background: var(--chrome-bg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+/* Nella finestra vera la barra nativa di macOS è un overlay sopra la webview
+   (`titleBarStyle: overlay`): i semafori sono i suoi, e si lascia loro spazio
+   a sinistra invece di ridisegnarli. Nel browser (prove visive) non serve. */
+html[data-tauri] .titlebar { padding-left: 78px; }
+.titlebar-title { flex: 1; text-align: center; font-weight: 600; }
+/* «Invia e ricevi» nella barra del titolo, come nel riferimento. La barra
+   trascina la finestra (`-webkit-app-region: drag`): senza `no-drag` il clic
+   non arriverebbe al pulsante e resterebbe muto nell'app vera. Lo spaziatore a
+   destra ha la stessa larghezza, così il titolo resta centrato nella finestra. */
+.titlebar-btn {
+  width: 30px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+.titlebar-btn:hover { background: var(--sidebar-sel-bg); color: var(--text-primary); }
+.titlebar-btn[aria-busy="true"] { opacity: 0.55; cursor: default; }
+.titlebar-spacer { width: 30px; flex: 0 0 auto; }
+
+/* ✕ delle finestre interne (composizione, impostazioni e i loro pannelli,
+   rubrica, agenda…), in testa alla barra del titolo dove stavano i pallini
+   finti dei semafori (rimossi). Discreta come gli altri pulsanti di barra:
+   solo i token esistenti, nessun colore nuovo, così regge in chiaro e in scuro. */
+.win-close {
+  flex: 0 0 auto;
+  width: 20px; height: 18px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0;
+  border: 0; border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px; line-height: 1; font-family: inherit;
+  cursor: pointer;
+}
+.win-close:hover { background: var(--sidebar-sel-bg); color: var(--text-primary); }
+.win-close:focus-visible { outline: 2px solid var(--campo-focus); outline-offset: 1px; }
+.search {
+  display: inline-flex; align-items: center; gap: 6px;
+  width: 220px; padding: 3px 10px;
+  background: var(--sidebar-sel-bg); border: 1px solid var(--btn-border); border-radius: 6px;
+  color: var(--text-secondary); font-size: 12px;
+  -webkit-app-region: no-drag;
+}
+.search-ic { font-size: 11px; }
+.search-input {
+  flex: 1; min-width: 0; border: 0; background: transparent; outline: none;
+  color: var(--text-primary); font-size: 12px; font-family: inherit;
+}
+.search-input::placeholder { color: var(--text-placeholder); }
+.search-input:focus { outline: none; }
+.search:focus-within { border-color: var(--campo-focus); }
+.help { color: var(--text-secondary); font-size: 15px; cursor: pointer; }
+
+/* La barra del titolo trascina la finestra (`-webkit-app-region: drag`), ma
+   dentro un'area di trascinamento il webview NON consegna i clic agli elementi:
+   ogni controllo interattivo va dichiarato `no-drag`, altrimenti resta muto
+   nell'app vera pur funzionando nelle prove nel browser. */
+.titlebar .search,
+.titlebar .help { -webkit-app-region: no-drag; }
+
+/* ---------- schede del ribbon ---------- */
+.tab { cursor: pointer; }
+.tab--active { font-weight: 600; }
+
+/* ---------- lista vuota (nessun account configurato) ---------- */
+.lista-vuota {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; height: 100%; padding: 0 28px; text-align: center;
+}
+.lista-vuota-titolo { font-size: 15px; font-weight: 700; margin: 0; }
+.lista-vuota-testo { font-size: 12px; color: var(--text-secondary); max-width: 420px; margin: 0; line-height: 1.5; }
+.lista-vuota button {
+  font: inherit; font-size: 12px; height: 28px; padding: 0 16px; cursor: pointer;
+  color: var(--text-on-select); background: var(--accent);
+  border: 0; border-radius: 6px;
+}
+
+/* ---------- ribbon ---------- */
+.ribbon {
+  flex: 0 0 auto;
+  height: var(--h-ribbon);
+  background: var(--chrome-bg);
+  border-bottom: 1px solid var(--list-header-sep);
+  padding: 0 16px 8px;
+  display: flex;
+  flex-direction: column;
+}
+.ribbon-tabs { height: 26px; display: flex; align-items: flex-end; gap: 22px; font-size: 12px; }
+.tab { color: var(--text-secondary); padding-bottom: 4px; }
+.tab--active { color: var(--text-primary); font-weight: 600; border-bottom: 2px solid var(--accent); }
+.ribbon-groups { display: flex; align-items: flex-start; gap: 2px; margin-top: 8px; }
+.rb { width: 74px; text-align: center; }
+.rb .ic { font-size: 20px; line-height: 1; color: var(--text-secondary); }
+.rb .lb { font-size: 10px; color: var(--text-secondary); margin-top: 4px; line-height: 1.25; }
+.rb--wide { width: 86px; }
+.rb--ai {
+  background: var(--ai-panel-bg); border: 1px solid var(--ai-accent); border-radius: 7px;
+  padding: 4px 2px; cursor: pointer;
+}
+.rb--ai .ic { color: var(--ai-accent); }
+.rb--ai .lb { color: var(--text-primary); font-weight: 700; }
+.rb-sep { width: 1px; height: 62px; background: var(--btn-border); margin: 0 8px; }
+
+/* ---------- corpo ---------- */
+.body { flex: 1; display: flex; min-height: 0; }
+
+.sidebar {
+  flex: 0 0 auto;
+  width: var(--w-sidebar);
+  background: var(--window-bg);
+  border-right: 1px solid var(--sidebar-sep);
+  padding: 6px 0;
+  overflow: hidden;
+}
+.folder {
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.folder--child { padding-left: 26px; color: var(--text-secondary); border-top: 1px solid var(--sidebar-sep); }
+.folder--sel { padding-left: 26px; background: var(--sidebar-sel-bg); font-weight: 600; }
+.folder--group { border-top: 1px solid var(--sidebar-sep); margin-top: 8px; padding-top: 8px; }
+.folder .count { float: right; color: var(--text-secondary); }
+
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.list-head {
+  flex: 0 0 auto;
+  height: var(--h-list-head);
+  background: var(--list-header-bg);
+  border-bottom: 1px solid var(--list-header-sep);
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.col { padding-right: 10px; }
+.col--flag { width: 30px; }
+.col--from { width: 340px; }
+.col--subject { flex: 1; }
+.col--date { width: 210px; }
+.col--cat { width: 130px; }
+.col--raggruppa { margin-left: auto; padding-right: 0; }
+.conv-toggle {
+  font: inherit;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--list-header-sep);
+  border-radius: 3px;
+  padding: 1px 6px;
+  cursor: pointer;
+}
+.conv-toggle[aria-pressed="true"] {
+  color: var(--text-on-select);
+  background: var(--row-sel-bg);
+  border-color: var(--row-sel-bg);
+}
+
+.list { flex: 0 0 auto; background: var(--window-bg); }
+.group-row {
+  height: var(--h-group-row);
+  background: var(--group-row-bg);
+  color: var(--text-secondary);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+}
+/* ---------- conversazioni (blocco H): righe raggruppate ed espandibili ------- */
+.row--conv { cursor: default; }
+.conv-caret { cursor: pointer; color: var(--text-secondary); user-select: none; }
+.conv-count {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  margin-left: 4px;
+}
+.conv-nonletti {
+  display: inline-block;
+  min-width: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: #0b62c4;
+  color: #ffffff;
+  font-size: 11px;
+  text-align: center;
+}
+.conv-figli { background: rgba(127, 127, 127, 0.06); }
+.row--msg { padding-left: 22px; font-size: 11.5px; }
+.row--msg .cell--from { width: 320px; color: var(--text-secondary); }
+.conv--aperta > .row--conv { background: var(--row-hover-bg); }
+
+/* ---------- pannello Regole (blocco H) -------------------------------------- */
+.reg-riga {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-bottom: 1px solid var(--row-sep);
+}
+.reg-riga--spenta { opacity: .6; }
+.reg-riga .reg-attiva { display: inline-flex; align-items: center; gap: 4px; margin: 0; font-size: 11px; }
+.reg-nome { min-width: 160px; font-weight: 600; font-size: 12px; }
+.reg-dettaglio { flex: 1; color: var(--text-secondary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reg-stat { color: var(--text-secondary); font-size: 11px; white-space: nowrap; }
+.reg-comandi { display: inline-flex; gap: 4px; }
+.reg-comandi .ai-btn2 { padding: 2px 6px; }
+#reg-form .settings-grid { margin-bottom: 4px; }
+
+.row {
+  height: var(--h-row);
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  border-bottom: 1px solid var(--row-sep);
+  cursor: default;
+}
+.row:hover { background: var(--row-hover-bg); }
+.row--sel { background: var(--row-sel-bg); color: var(--text-on-select); }
+.row--sel .row-date { color: inherit; opacity: .85; }
+.row .cell { padding-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell--flag { width: 30px; text-align: center; }
+.cell--from { width: 340px; }
+.cell--subject { flex: 1; }
+.cell--date { width: 210px; color: var(--text-secondary); }
+.cell--cat { width: 130px; }
+
+/* ---------- ricerca (blocco B): intestazione e righe dei risultati ---------- */
+.search-head {
+  height: var(--h-group-row);
+  background: var(--group-row-bg);
+  color: var(--text-primary);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px 0 10px;
+  border-bottom: 1px solid var(--list-header-sep);
+}
+.search-head-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-close {
+  flex: 0 0 auto; width: 20px; height: 18px; margin-left: 8px;
+  border: 1px solid var(--btn-border); border-radius: 4px;
+  background: transparent; color: var(--text-secondary);
+  font-size: 12px; line-height: 1; cursor: pointer;
+}
+.search-close:hover { background: var(--row-hover-bg); color: var(--text-primary); }
+.search-nota {
+  padding: 4px 10px; font-size: 11px; color: var(--text-secondary);
+  background: var(--info-bar-bg); border-bottom: 1px solid var(--row-sep);
+}
+.search-empty {
+  padding: 14px 10px; font-size: 12px; color: var(--text-secondary);
+}
+.srow {
+  padding: 5px 4px 6px;
+  border-bottom: 1px solid var(--row-sep);
+  cursor: default;
+}
+.srow:hover { background: var(--row-hover-bg); }
+.srow--sel { background: var(--row-sel-bg); color: var(--text-on-select); }
+.srow-top { display: flex; align-items: center; font-size: 12px; }
+.srow--sel .row-date { color: inherit; opacity: .85; }
+.srow-top .cell { padding-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.srow--nonletto .cell--from,
+.srow--nonletto .cell--subject { font-weight: 600; }
+.srow-preview {
+  margin-top: 2px; padding-left: 40px;
+  font-size: 11px; color: var(--text-secondary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.srow--sel .srow-preview { color: inherit; opacity: .9; }
+.search-hit {
+  background: var(--accent); color: var(--accent-text);
+  border-radius: 2px; padding: 0 1px;
+}
+
+.pane-sep { height: 1px; background: var(--pane-sep); flex: 0 0 auto; }
+
+/* ---------- pannello di lettura ---------- */
+.reading { flex: 1; display: flex; flex-direction: column; min-height: 0; background: var(--window-bg); }
+
+.ai-bar {
+  flex: 0 0 auto;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--row-sep);
+}
+.ai-bar .label { font-size: 11px; color: var(--text-secondary); }
+.ai-btn {
+  border: 1px solid var(--btn-border); border-radius: 6px; padding: 3px 11px;
+  font-size: 12px; background: transparent; color: var(--text-primary); cursor: pointer;
+}
+.ai-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+.ai-btn--accent { border-color: var(--accent); color: var(--accent); }
+.ai-model { margin-left: auto; font-size: 11px; color: var(--text-secondary); }
+.ai-model b { color: var(--text-primary); font-weight: 600; }
+
+.mail-subject { padding: 10px 16px 2px; font-size: 22px; font-weight: 700; }
+.mail-sender { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; padding: 4px 16px 10px; }
+.avatar {
+  width: 28px; height: 28px; border-radius: 50%; background: #D2691E; color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;
+}
+.sender-name { font-weight: 600; }
+.sender-addr, .sender-to { color: var(--text-secondary); }
+.sender-to { font-size: 11px; }
+.mail-date { margin-left: auto; color: var(--text-secondary); font-size: 12px; }
+
+.info-bar {
+  flex: 0 0 auto; height: var(--h-info-bar); background: var(--info-bar-bg);
+  display: flex; align-items: center; padding: 0 16px; font-size: 11px;
+}
+
+.ai-card {
+  flex: 0 0 auto;
+  margin: 10px 16px 4px;
+  background: var(--ai-panel-bg);
+  border-left: 3px solid var(--ai-accent);
+  border-radius: 6px;
+  padding: 9px 12px;
+}
+.ai-card .t { font-weight: 700; font-size: 11px; color: var(--ai-text); }
+.ai-card .b { color: var(--ai-text-dim); margin-top: 4px; }
+.ai-card .f { color: var(--ai-text-dim); font-size: 10px; margin-top: 4px; opacity: .85; }
+
+.mail-body { padding: 6px 16px 16px; font-size: 13px; line-height: 1.6; overflow: auto; }
+.mail-body iframe { width: 100%; border: 0; background: #fff; color: #000; }
+
+/* ---------- corpo sanificato, immagini e allegati (Milestone 4) ---------- */
+.mail-body-tools {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 0 6px;
+}
+/* Scala del testo del messaggio letto (blocco R): A⁻ / A⁺ nella barra delle azioni. */
+.lettura-zoom { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; }
+.lettura-zoom-val { font-size: 11px; color: var(--text-secondary); min-width: 34px; text-align: center; }
+.mail-btn {
+  border: 1px solid var(--btn-border); border-radius: 6px; padding: 3px 10px;
+  font-size: 11px; background: transparent; color: var(--text-primary); cursor: pointer;
+}
+.mail-btn:hover { background: var(--row-sep); }
+.mail-btn:disabled { opacity: .55; cursor: default; }
+.mail-frame {
+  width: 100%; min-height: 280px; border: 0; background: #fff; color: #000;
+  border-radius: 4px;
+}
+.attachments { padding: 0 16px 12px; }
+.attach-title { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+.attach {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border: 1px solid var(--row-sep); border-radius: 6px;
+  margin-bottom: 5px;
+}
+.attach-icon { flex: 0 0 auto; }
+.attach-name { font-weight: 600; }
+.attach-meta { color: var(--text-secondary); font-size: 11px; }
+.attach .mail-btn { margin-left: auto; }
+.attach-path {
+  flex-basis: 100%; color: var(--text-secondary); font-size: 11px;
+  word-break: break-all; margin-top: 3px;
+}
+
+/* ---------- barra di stato ---------- */
+.statusbar {
+  flex: 0 0 auto;
+  height: var(--h-statusbar);
+  background: var(--chrome-bg);
+  border-top: 1px solid var(--btn-border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.statusbar-right { margin-left: auto; display: flex; gap: 26px; }
+
+/* ---------- finestra di composizione (Milestone 5) ---------- */
+.compose-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+.compose-window {
+  width: 1496px;
+  height: 878px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  background: var(--window-bg);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--pane-sep);
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+}
+
+.compose-titlebar {
+  flex: 0 0 auto;
+  height: var(--h-titlebar);
+  background: var(--chrome-bg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  user-select: none;
+}
+.compose-tb-title { flex: 1; text-align: center; font-weight: 600; }
+
+.compose-ribbon {
+  flex: 0 0 auto;
+  height: var(--h-ribbon);
+  background: var(--chrome-bg);
+  border-bottom: 1px solid var(--list-header-sep);
+  padding: 0 16px 8px;
+  display: flex;
+  flex-direction: column;
+}
+.compose-tabs { height: 26px; display: flex; align-items: flex-end; gap: 22px; font-size: 12px; }
+.compose-groups { display: flex; align-items: flex-start; gap: 2px; margin-top: 8px; }
+.compose-groups .rb { cursor: pointer; }
+.compose-groups .rb--invia { cursor: pointer; }
+.compose-groups .rb--invia .ic { color: var(--accent); font-size: 22px; }
+
+.cmp-group { display: flex; align-items: center; gap: 6px; padding: 0 6px; }
+/* Casella del gruppo «Carattere» (blocco R): mostra la famiglia e la dimensione
+   in vigore in una scatola visibile come nel riferimento (bordo e raggio dei
+   campi, dimensione misurata) e le cambia davvero — un clic apre l'elenco.
+   `font: inherit` spegne il font di sistema del pulsante; `font-size: 12px`
+   resta la misura del riferimento. */
+.cmp-font, .cmp-size {
+  border: 1px solid var(--campo-bordo); border-radius: 4px;
+  padding: 3px 10px; font: inherit; font-size: 12px; white-space: nowrap;
+  background: transparent; color: var(--text-primary); cursor: pointer;
+}
+.cmp-font:hover, .cmp-size:hover { border-color: var(--btn-border); }
+.cmp-inl { font-size: 15px; color: var(--text-primary); min-width: 16px; text-align: center; }
+.cmp-sep-lite { width: 1px; height: 26px; background: var(--btn-border); margin: 0 4px; }
+.cmp-b { font-weight: 700; }
+.cmp-i { font-style: italic; }
+.cmp-u { text-decoration: underline; }
+.cmp-s { text-decoration: line-through; font-size: 13px; }
+.cmp-evid { background: #FFE94A; color: #000; border-radius: 2px; padding: 0 3px; }
+.cmp-col { color: #C0392B; font-weight: 700; }
+.cmp-group--paragrafo { gap: 9px; font-size: 15px; color: var(--text-secondary); }
+
+/* Menu del gruppo «Carattere» (blocco R): famiglie e dimensioni. */
+.cmp-menu { position: absolute; z-index: 40; min-width: 150px; max-height: 260px; overflow: auto; padding: 4px; background: var(--window-bg); border: 1px solid var(--btn-border); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+.cmp-menu-voce { display: block; width: 100%; text-align: left; font: inherit; padding: 4px 8px; border: 0; border-radius: 4px; background: transparent; color: var(--text-primary); cursor: pointer; }
+.cmp-menu-voce:hover { background: var(--row-sep); }
+
+.compose-fields { flex: 0 0 auto; padding: 4px 0 0; }
+.cmp-row { display: flex; align-items: center; height: 23px; }
+.cmp-row--cc, .cmp-row--oggetto { height: 22px; }
+.cmp-row--oggetto { margin-top: 4px; }
+.cmp-label {
+  width: 78px; text-align: right; padding-right: 10px;
+  font-size: 12px; color: var(--text-primary); flex: 0 0 auto;
+}
+.cmp-input {
+  flex: 1; height: 100%; border: 1px solid var(--campo-bordo);
+  background: var(--window-bg); color: var(--text-primary);
+  font: inherit; font-size: 12px; padding: 0 6px; outline: none;
+}
+.cmp-row:not(.cmp-row--oggetto) .cmp-input { margin-right: 56px; }
+.cmp-row--oggetto .cmp-input { margin-right: 4px; }
+.cmp-input:focus { border: 2px solid var(--campo-focus); }
+.cmp-people { width: 46px; text-align: center; color: var(--text-secondary); flex: 0 0 auto; }
+
+.compose-body {
+  flex: 1; min-height: 0; overflow: auto;
+  border-top: 1px solid var(--pane-sep);
+  padding: 16px 24px; font-size: 13px; line-height: 1.6; outline: none;
+}
+.compose-esito { flex: 0 0 auto; padding: 0 24px; font-size: 12px; color: var(--text-secondary); }
+.compose-esito:not(:empty) { padding: 4px 24px; }
+.compose-esito--errore { color: #E06C6C; }
+/* Nota sulla copia in Posta inviata: riga discreta in coda al corpo, non una barra di pulsanti.
+   Il riferimento non ha alcun pulsante "Invia" o "Chiudi" fuori dal ribbon: l'invio è la voce
+   "Invia" del ribbon, la chiusura è Esc o ⌘W. */
+.compose-nota {
+  flex: 0 0 auto; margin: 0; padding: 6px 24px 10px;
+  color: var(--text-secondary); font-size: 11px;
+}
+/* Voce "Invia" del ribbon mentre l'invio è in corso. */
+.rb--in-attesa { opacity: .55; pointer-events: none; }
+
+/* ---------- Assistente IA (Milestone 6.4) ---------- */
+.ai-model-select {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-primary);
+  background: var(--window-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+.ai-btn:disabled { opacity: .55; cursor: wait; }
+.ai-btn--attesa { border-style: dashed; }
+
+/* Scheda del risultato: richiudibile, con fonti ed esclusioni in fondo. */
+.ai-card .t { cursor: pointer; }
+.ai-card--richiusa .b,
+.ai-card--richiusa .f,
+.ai-card--richiusa .ai-elenco,
+.ai-card--richiusa .ai-scadenze { display: none; }
+.ai-card--errore { border-left-color: #E06C6C; }
+.ai-card--attesa .b { font-style: italic; }
+.ai-card-close {
+  float: right;
+  border: 0; background: transparent; cursor: pointer;
+  font-size: 13px; line-height: 1; color: var(--ai-text-dim);
+}
+.ai-elenco { margin: 4px 0 0 16px; padding: 0; color: var(--ai-text-dim); }
+.ai-elenco li { margin: 2px 0; }
+.ai-scadenze { margin-top: 4px; color: var(--ai-text-dim); font-size: 11px; }
+
+/* Finestra di conferma per il consenso cloud. */
+.consenso-velo {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(0, 0, 0, .35);
+  display: flex; align-items: center; justify-content: center;
+}
+.consenso-box {
+  background: var(--window-bg); border: 1px solid var(--pane-sep);
+  border-radius: 10px; padding: 18px 20px; max-width: 420px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .25);
+}
+.consenso-titolo { font-weight: 700; font-size: 14px; }
+.consenso-box p { color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.consenso-bottoni { display: flex; justify-content: flex-end; gap: 8px; }
+.consenso-bottoni button {
+  border: 1px solid var(--btn-border); border-radius: 6px;
+  padding: 5px 12px; font-size: 12px; cursor: pointer;
+  background: transparent; color: var(--text-primary);
+}
+.consenso-si { background: var(--accent) !important; color: var(--accent-text) !important; font-weight: 700; }
+
+/* Nota sopra il corpo della bozza assistita (Milestone 7.1). */
+.compose-ai-nota {
+  flex: 0 0 auto;
+  margin: 6px 24px 0;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--ai-text);
+  background: var(--ai-panel-bg);
+  border-left: 3px solid var(--ai-accent);
+  border-radius: 5px;
+}
+
+/* ---------- Controllo prima dell'invio (Milestone 7.2) ----------
+   Barra sopra il corpo, sotto le righe A:/Cc:/Oggetto:, allineata ai campi
+   (margine sinistro 78px come l'etichetta). Non ha alcun pulsante che disabiliti
+   l'invio: "Invia lo stesso" conferma soltanto. */
+.compose-controllo {
+  flex: 0 0 auto;
+  margin: 8px 4px 0 78px;
+  padding: 6px 10px;
+  background: var(--ai-panel-bg);
+  border: 1px solid var(--ai-accent);
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cmp-cont-head { display: flex; align-items: center; gap: 8px; }
+.cmp-cont-ic { color: var(--ai-accent); font-size: 14px; flex: 0 0 auto; }
+.cmp-cont-titolo { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.cmp-cont-sub { font-size: 11px; color: var(--ai-text-dim); overflow: hidden; text-overflow: ellipsis; }
+.cmp-cont-gear { margin-left: auto; font-size: 11px; color: var(--ai-text-dim); flex: 0 0 auto; }
+.cmp-cont-avvisi { display: flex; flex-direction: column; gap: 3px; }
+.cmp-cont-avvisi:not(:empty) { margin-top: 2px; }
+.cmp-avviso {
+  display: flex; align-items: baseline; gap: 6px;
+  font-size: 11px; padding-left: 22px;
+}
+.cmp-avviso-ic { flex: 0 0 auto; }
+.cmp-avviso-tit { font-weight: 600; flex: 0 0 auto; }
+.cmp-avviso-msg { color: var(--ai-text-dim); }
+.cmp-avviso--attenzione .cmp-avviso-ic,
+.cmp-avviso--attenzione .cmp-avviso-tit { color: #E0A94A; }
+.cmp-avviso--informativo .cmp-avviso-ic,
+.cmp-avviso--informativo .cmp-avviso-tit { color: var(--ai-text-dim); }
+.cmp-cont-azione { display: flex; justify-content: flex-end; }
+.cmp-cont-azione:not(:empty) { margin-top: 2px; }
+.cmp-cont-lostesso {
+  border: 1px solid var(--ai-accent); border-radius: 6px;
+  padding: 4px 12px; font-size: 12px; cursor: pointer;
+  background: transparent; color: var(--ai-text); font-weight: 600;
+}
+.cmp-cont-lostesso:hover { background: var(--row-sep); }
+
+/* ---------- Impostazioni (Milestone 8) ----------
+   Misure e colori dal riferimento (§2.5 della spec, `mockup-impostazioni.html`):
+   hub 992 × 372 pt, sfondo `#313335`, barra titolo `#262628` (26 pt), separatori
+   di gruppo `#494B4D`, pannello Assistente IA largo 640 pt. Quei tre colori
+   misurati non sono fra i token della finestra principale (che ha chrome e sfondo
+   diversi): restano variabili locali di questa finestra, con la provenienza
+   annotata. Testo, campi, accento, riquadro IA e separatore dei campi riusano i
+   token di `tokens.css`. */
+.settings-overlay,
+.ai-settings-overlay,
+.mail-settings-overlay {
+  position: fixed; inset: 0; z-index: 70;
+  background: rgba(0, 0, 0, .45);
+  display: flex; align-items: center; justify-content: center;
+}
+.ai-settings-overlay { z-index: 80; }
+.mail-settings-overlay { z-index: 85; }
+
+.settings-win,
+.ai-settings-win {
+  --settings-bg: #313335;      /* M — §2.5 */
+  --settings-chrome: #262628;  /* M — §2.5 */
+  --settings-gsep: #494B4D;    /* M — §2.5 */
+  background: var(--settings-bg);
+  color: var(--text-primary);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--pane-sep);
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+}
+:root[data-theme="light"] .settings-win,
+:root[data-theme="light"] .ai-settings-win {
+  --settings-bg: #F3F2F1;      /* M — mockup, tema chiaro */
+  --settings-chrome: #F5F5F5;  /* M */
+  --settings-gsep: #D2D0CE;    /* M */
+}
+.settings-win { width: 992px; min-height: 372px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); }
+.ai-settings-win { width: 640px; max-width: calc(100vw - 24px); max-height: calc(100vh - 24px); overflow-y: auto; }
+
+.settings-titlebar {
+  flex: 0 0 auto; height: 26px; /* M — §2.5 */
+  background: var(--settings-chrome);
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px; font-weight: 600; font-size: 14px;
+}
+.settings-title { flex: 1; }
+.settings-showall {
+  border: 1px solid var(--campo-bordo); border-radius: 6px;
+  padding: 2px 10px; font-size: 12px; cursor: pointer; font-family: inherit;
+  background: var(--window-bg); color: var(--text-primary);
+}
+
+.settings-body { padding: 10px 0 0; }
+.settings-group-titolo { padding: 0 18px 8px; font-weight: 700; font-size: 13px; }
+.settings-tiles { display: flex; gap: 6px; padding: 0 18px 12px; }
+.settings-hr { border-top: 1px solid var(--settings-gsep); margin: 0; }
+
+.settings-tile {
+  width: 96px; text-align: center; font-size: 11px; color: var(--text-primary);
+  background: transparent; border: 1px solid transparent; border-radius: 8px;
+  padding: 4px 0; cursor: pointer; font-family: inherit;
+}
+.settings-tile:hover { background: var(--row-hover-bg); }
+.settings-tile-ic { display: block; font-size: 26px; line-height: 1.1; }
+.settings-tile-lb { display: block; margin-top: 5px; line-height: 1.25; }
+.settings-tile--ia {
+  width: 110px;
+  background: var(--ai-panel-bg);
+  border-color: var(--ai-accent);
+  padding: 6px 0;
+}
+.settings-tile--ia .settings-tile-ic { color: var(--ai-accent); }
+.settings-tile--ia .settings-tile-lb { font-weight: 700; }
+.settings-tile-sotto { font-size: 9px; color: var(--ai-text-dim); margin-top: 1px; }
+
+.settings-nota {
+  padding: 6px 18px 10px; font-size: 12px; color: var(--text-secondary);
+  min-height: 18px;
+}
+.settings-nota--errore { color: #E06C6C; }
+
+/* "Generale": scelta del tema, dentro il gruppo. */
+.settings-generale { padding: 8px 18px 10px; border-top: 1px solid var(--settings-gsep); }
+.settings-riga { display: flex; gap: 18px; font-size: 12px; }
+.settings-riga label { display: inline-flex; align-items: center; gap: 5px; }
+
+/* ---------- Pannello Assistente IA (task 8.2) ---------- */
+.ai-settings-body { padding: 14px 22px 20px; }
+.settings-sec { font-weight: 700; font-size: 12px; margin: 12px 0 4px; }
+.ai-settings-body .settings-sec:first-child { margin-top: 0; }
+.settings-grid {
+  display: grid; grid-template-columns: 150px 1fr;
+  gap: 8px; align-items: center; margin-top: 6px;
+}
+.settings-lbl { font-size: 12px; text-align: right; padding-right: 12px; color: var(--text-primary); }
+.settings-fld {
+  background: var(--window-bg); border: 1px solid var(--campo-bordo);
+  border-radius: 6px; height: 26px; padding: 0 8px;
+  font: inherit; font-size: 12px; color: var(--text-primary); outline: none;
+}
+.settings-fld:focus { border: 2px solid var(--campo-focus); }
+.ai-riga-motore { display: flex; gap: 14px; align-items: center; font-size: 12px; margin-bottom: 4px; }
+.ai-riga-motore label { display: inline-flex; align-items: center; gap: 5px; }
+.ai-check { display: block; font-size: 12px; margin-bottom: 6px; }
+.ai-avvia-riga { display: flex; gap: 10px; align-items: center; margin: 6px 0; font-size: 11px; }
+.ai-btn2 {
+  border: 1px solid var(--btn-border); border-radius: 6px;
+  padding: 4px 12px; font-size: 12px; cursor: pointer; font-family: inherit;
+  background: var(--window-bg); color: var(--text-primary);
+}
+.ai-avvia-esito { color: var(--ai-text-dim); }
+
+.ai-registro-riga {
+  font-size: 11px; color: var(--ai-text-dim);
+  margin: 8px 0 0; display: flex; gap: 6px; align-items: baseline;
+}
+.ai-link {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  color: var(--accent); text-decoration: underline; font-size: 11px; font-family: inherit;
+}
+.ai-registro-pannello {
+  margin-top: 8px; border: 1px solid var(--ai-accent); border-radius: 6px;
+  background: var(--ai-panel-bg); padding: 8px 10px;
+}
+.ai-registro-spiega { font-size: 11px; color: var(--ai-text-dim); line-height: 1.5; margin-bottom: 6px; }
+.reg-table { border-collapse: collapse; width: 100%; font-size: 11px; color: var(--text-primary); }
+.reg-table th, .reg-table td {
+  text-align: left; padding: 3px 10px 3px 0;
+  border-bottom: 1px solid var(--settings-gsep);
+}
+.reg-table th { color: var(--text-secondary); font-weight: 600; }
+.reg-hash { font-family: ui-monospace, "SF Mono", monospace; }
+.ai-registro-vuoto { font-size: 11px; color: var(--ai-text-dim); }
+
+.ai-firma {
+  height: auto; min-height: 54px; padding: 6px 8px;
+  width: 100%; box-sizing: border-box; resize: vertical;
+}
+.ai-firma-nota { font-size: 11px; color: var(--ai-text-dim); margin-top: 4px; }
+
+/* ---------- finestra Account (spec §2.5: 738 x 742 pt) ---------- */
+.account-window {
+  width: 738px;
+  height: 742px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  background: var(--window-bg);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--pane-sep);
+  border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+}
+.account-corpo { flex: 1; display: flex; min-height: 0; }
+.account-elenco {
+  flex: 0 0 auto;
+  width: 200px;
+  background: var(--chrome-bg);
+  border-right: 1px solid var(--sidebar-sep);
+  padding: 10px 8px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+/* Blocco J: la lista scorre, le azioni (＋ / −) restano in fondo. */
+.acc-elenco-lista { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-bottom: 44px; }
+.acc-vuoto { padding: 12px 8px; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.acc-riga { border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+.acc-riga:hover { background: var(--sidebar-hover, rgba(0, 0, 0, .05)); }
+.acc-riga--sel { background: var(--sidebar-sel-bg); }
+.acc-riga-desc { font-size: 11px; color: var(--text-secondary); }
+.acc-riga-nome { font-size: 13px; font-weight: 700; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acc-riga-mail { font-size: 11px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acc-punto { color: #28C840; }
+.acc-azioni { position: absolute; left: 8px; right: 8px; bottom: 10px; display: flex; gap: 8px; align-items: center; }
+.acc-azione { white-space: nowrap; }
+.acc-azioni-punti { margin-left: auto; }
+.account-modulo-contenitore { flex: 1; display: flex; min-width: 0; }
+.account-modulo { flex: 1; padding: 16px 26px; overflow: auto; min-width: 0; }
+.acc-intestazione { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.acc-predefinito { margin-left: auto; flex: 0 0 auto; }
+.acc-badge {
+  border: 1px solid var(--campo-bordo); border-radius: 4px; padding: 3px 6px;
+  font-size: 9px; color: var(--accent); flex: 0 0 auto;
+}
+.acc-titolo { font-size: 16px; font-weight: 700; }
+.acc-sottotitolo { font-size: 12px; color: var(--text-secondary); }
+.acc-riga-campo { display: grid; grid-template-columns: 170px 1fr; gap: 10px; align-items: center; margin-bottom: 8px; }
+.acc-riga-campo > label { text-align: right; font-size: 12px; }
+.acc-input {
+  width: 100%; height: 26px; font: inherit; font-size: 12px; padding: 0 8px;
+  background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--campo-bordo); border-radius: 6px; outline: none;
+}
+.acc-input::placeholder { color: var(--text-placeholder); }
+.acc-input:focus { border: 2px solid var(--campo-focus); }
+.acc-host { display: flex; align-items: center; gap: 8px; }
+.acc-porta { width: 70px; flex: 0 0 auto; }
+.acc-due-punti { color: var(--text-secondary); }
+.acc-opzioni { margin: 0 0 10px 180px; font-size: 12px; display: flex; align-items: center; gap: 12px; }
+.acc-sezione { font-weight: 700; font-size: 12px; margin: 12px 0 6px; border-top: 1px solid var(--pane-sep); padding-top: 10px; }
+.acc-piede { margin-top: 14px; border-top: 1px solid var(--pane-sep); padding-top: 10px; }
+.acc-stato { font-size: 11px; color: var(--text-secondary); }
+.acc-stato--errore { color: #E06C6C; }
+.acc-link {
+  background: none; border: 0; padding: 0; color: var(--accent);
+  font: inherit; font-size: 11px; text-decoration: underline; cursor: pointer;
+}
+/* ---------- Blocco M: prova della connessione ----------
+   I passi con ✓/✗, il testo esatto del server e il consiglio in italiano. Il
+   riquadro scorre: in una finestra da 742 pt i sei passi della ricezione più i
+   cinque dell'invio non ci starebbero tutti. */
+.acc-diag-azioni { display: flex; gap: 8px; margin-bottom: 8px; }
+.acc-diag {
+  max-height: 300px; overflow-y: auto; padding: 8px 10px;
+  border: 1px solid var(--pane-sep); border-radius: 6px; background: var(--window-bg);
+}
+.acc-diag-vuoto { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+.acc-diag-blocco + .acc-diag-blocco {
+  margin-top: 10px; border-top: 1px solid var(--pane-sep); padding-top: 8px;
+}
+.acc-diag-titolo {
+  font-size: 11px; font-weight: 700; letter-spacing: .3px;
+  text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px;
+}
+.acc-diag-passo { display: grid; grid-template-columns: 16px 1fr; gap: 6px; padding: 3px 0; }
+.acc-diag-icona { font-weight: 700; text-align: center; }
+.acc-diag-passo--ok .acc-diag-icona { color: #28C840; }
+.acc-diag-passo--errore .acc-diag-icona { color: #E06C6C; }
+.acc-diag-nome { font-size: 12px; font-weight: 600; }
+.acc-diag-passo--errore .acc-diag-nome { color: #E06C6C; }
+.acc-diag-dettaglio {
+  font-size: 11px; color: var(--text-secondary); line-height: 1.45;
+  word-break: break-word; font-family: ui-monospace, "SF Mono", monospace;
+}
+.acc-diag-consiglio { font-size: 11px; color: var(--text-primary); line-height: 1.5; margin-top: 3px; }
+.acc-diag-riepilogo {
+  font-size: 11px; margin-top: 6px; padding-top: 6px;
+  border-top: 1px solid var(--pane-sep); color: var(--text-primary);
+}
+.acc-diag-riepilogo--errore { color: #E06C6C; }
+/* ---------- Azioni sul messaggio e lista coerente (blocco A) ----------
+   Le voci del ribbon ora rispondono al clic: lo mostrano cursore e hover.
+   La lista riflette lo stato del messaggio: grassetto se non letto, targhette
+   per le categorie, ✔ se completato, ⚑ pieno se contrassegnato. */
+.rb { cursor: pointer; border-radius: 6px; }
+.rb:hover { background: var(--row-hover-bg); }
+.rb--attivo { background: var(--sidebar-sel-bg); }
+.rb--attivo .ic { color: var(--accent); }
+.rb--attivo .lb { font-weight: 700; color: var(--text-primary); }
+
+.row--nonletto .cell--from,
+.row--nonletto .cell--subject { font-weight: 700; }
+.row--contrassegnato .cell--subject { font-style: italic; }
+/* Colore della riga contrassegnata (blocco N, pannello «Visualizza»): lo sfondo
+   misurato `MessageListFlaggedBackgroundColor`, oppure nessuno se non scelto. */
+.list[data-colore-contrassegnata="giallo"] .row--contrassegnato { background: var(--row-flagged-bg); }
+.row--completato .cell--subject { text-decoration: line-through; opacity: .7; }
+.row--nonletto .row-date { color: var(--accent); }
+.row--sel.row--nonletto .row-date { color: inherit; }
+
+/* Colonna dell'indicatore di completamento: stretta, prima del contrassegno. */
+.cell--done { width: 18px; text-align: center; color: var(--accent); }
+
+/* Targhette delle categorie: nella lista (colonna Categoria) e sotto l'oggetto. */
+.cat-tag {
+  display: inline-block;
+  padding: 0 6px;
+  margin-right: 4px;
+  border: 1px solid var(--btn-border);
+  border-radius: 8px;
+  font-size: 10px;
+  line-height: 15px;
+  color: var(--text-secondary);
+  background: var(--group-row-bg);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mail-cats { padding: 2px 16px 0; }
+
+/* Targhetta di una categoria definita (blocco O): pallino col colore scelto nel
+   pannello «Categorie». La tinta arriva da `--cat-colore` (inline), così la
+   stessa targhetta vale per la lista e per il pannello di lettura. */
+.cat-tag--colorato::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: var(--cat-colore, var(--text-secondary));
+  vertical-align: middle;
+}
+
+/* Pannello «Categorie» (blocco O): elenco, tavolozza dei colori, riordino. */
+.cat-elenco { margin: 6px 0 4px; }
+.cat-riga {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--pane-sep);
+  position: relative;
+}
+.cat-pallino {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border: 1px solid var(--btn-border);
+  border-radius: 50%;
+  background: var(--cat-colore, var(--text-secondary));
+  cursor: pointer;
+}
+.cat-nome { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+.cat-nome-input { min-width: 120px; }
+.cat-azioni { display: flex; align-items: center; gap: 4px; }
+.cat-freccia,
+.cat-btn {
+  font: inherit;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--btn-border);
+  border-radius: 6px;
+  padding: 1px 6px;
+  cursor: pointer;
+}
+.cat-freccia:disabled { opacity: .35; cursor: default; }
+.cat-btn--elimina { color: #E06C6C; }
+.cat-colori {
+  grid-column: 1 / -1;
+  padding: 6px 0 2px;
+}
+.cat-tavolozza { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+.cat-tinta {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--btn-border);
+  border-radius: 50%;
+  background: var(--cat-colore);
+  cursor: pointer;
+}
+.cat-tinta--scelta { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Riga di stato in errore (esito di un comando del kernel). */
+.stato--errore { color: #E06C6C; }
+
+/* Menu a comparsa del ribbon (Sposta / Categorizza / Filtra). */
+.rb-menu {
+  position: fixed;
+  z-index: 40;
+  min-width: 190px;
+  max-width: 320px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 4px;
+  background: var(--chrome-bg);
+  border: 1px solid var(--pane-sep);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+}
+.rb-menu-voce {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: transparent;
+  cursor: pointer;
+}
+.rb-menu-voce:hover { background: var(--row-hover-bg); }
+.rb-menu-voce--attivo { font-weight: 700; }
+.rb-menu-voce--attivo .rb-menu-ic { color: var(--accent); }
+.rb-menu-ic { flex: 0 0 auto; width: 14px; text-align: center; color: var(--text-secondary); }
+.rb-menu-lb { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb-menu-sep { height: 1px; background: var(--btn-border); margin: 4px 6px; }
+.rb-menu-campo { display: flex; gap: 6px; padding: 6px 4px 2px; }
+.rb-menu-input {
+  flex: 1; min-width: 0; height: 24px;
+  font: inherit; font-size: 12px; padding: 0 6px;
+  background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--campo-bordo); border-radius: 6px; outline: none;
+}
+.rb-menu-input:focus { border: 2px solid var(--campo-focus); }
+.rb-menu-aggiungi {
+  flex: 0 0 auto;
+  border: 1px solid var(--btn-border); border-radius: 6px;
+  padding: 0 10px; font: inherit; font-size: 12px; cursor: pointer;
+  background: var(--window-bg); color: var(--text-primary);
+}
+
+/* ---------- Composizione avanzata (blocco C): allegati, inserimenti, ritaglio ---------- */
+
+/* File trascinato sopra la finestra: si allega al rilascio (come Outlook). */
+.compose-overlay--drop { background: rgba(75, 160, 255, .28); }
+.compose-overlay--drop .compose-window { border-color: var(--accent); }
+
+/* Elenco degli allegati, sotto l'oggetto: nome, dimensione leggibile, X, totale. */
+.compose-allegati {
+  flex: 0 0 auto;
+  margin: 6px 78px 0;
+  padding: 4px 8px;
+  border: 1px solid var(--campo-bordo);
+  border-radius: 6px;
+  background: var(--chrome-bg);
+  max-height: 108px;
+  overflow: auto;
+}
+.compose-allegati[hidden] { display: none; }
+.cmp-allegati-elenco { display: flex; flex-direction: column; gap: 2px; }
+.cmp-allegato { display: flex; align-items: center; gap: 8px; font-size: 12px; height: 20px; }
+.cmp-allegato-ic { flex: 0 0 auto; }
+.cmp-allegato-nome {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+.cmp-allegato-dim { flex: 0 0 auto; color: var(--text-secondary); font-size: 11px; }
+.cmp-allegato-x {
+  flex: 0 0 auto; border: 0; background: transparent; cursor: pointer;
+  color: var(--text-secondary); font-size: 11px; line-height: 1; padding: 2px 5px;
+  border-radius: 4px;
+}
+.cmp-allegato-x:hover { background: var(--row-hover-bg); color: var(--text-primary); }
+.cmp-allegati-totale { margin: 2px 0 0; font-size: 11px; color: var(--text-secondary); }
+
+/* Moduli in linea (collegamento, tabella), ritaglio e avviso di chiusura:
+   centrati sopra la finestra di composizione. */
+.cmp-prompt, .cmp-ritaglio, .cmp-chiusura {
+  position: absolute; inset: 0; z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .35);
+}
+.cmp-prompt-box {
+  min-width: 320px; max-width: 440px;
+  background: var(--window-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--pane-sep); border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .4);
+}
+.cmp-prompt-titolo { font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+.cmp-prompt-box p { margin: 0 0 10px; font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.cmp-prompt-campi { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.cmp-prompt-riga { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.cmp-prompt-riga > span { flex: 0 0 84px; text-align: right; color: var(--text-secondary); }
+.cmp-prompt-riga input {
+  flex: 1; min-width: 0; height: 26px; font: inherit; font-size: 12px; padding: 0 8px;
+  background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--campo-bordo); border-radius: 6px; outline: none;
+}
+.cmp-prompt-riga input:focus { border: 2px solid var(--campo-focus); }
+.cmp-prompt-azioni { display: flex; justify-content: flex-end; gap: 8px; }
+.cmp-prompt-azioni button {
+  border: 1px solid var(--btn-border); border-radius: 6px;
+  padding: 5px 12px; font: inherit; font-size: 12px; cursor: pointer;
+  background: transparent; color: var(--text-primary);
+}
+.cmp-prompt-ok { background: var(--accent) !important; color: var(--accent-text) !important; font-weight: 700; }
+
+.cmp-ritaglio-aiuto { margin: 0 0 10px; font-size: 12px; color: var(--text-secondary); }
+.cmp-ritaglio-area {
+  display: flex; justify-content: center; margin-bottom: 12px;
+  background: var(--chrome-bg); border: 1px solid var(--campo-bordo);
+  border-radius: 6px; padding: 6px;
+}
+.cmp-rit-canvas { display: block; cursor: crosshair; max-width: 600px; }
+
+/* Tabella e immagini nel corpo della bozza (i controlli agiscono sul contenteditable). */
+.cmp-tabella { border-collapse: collapse; margin: 8px 0; }
+.cmp-tabella td {
+  min-width: 72px; height: 22px; padding: 2px 6px;
+  border: 1px solid var(--campo-bordo); font-size: 13px;
+}
+.cmp-img { max-width: 100%; height: auto; border: 1px solid var(--campo-bordo); border-radius: 4px; }
+
+/* I controlli vivi del ribbon (carattere, elenchi) si vedono cliccabili. */
+.compose-groups [data-cmd] { cursor: pointer; }
+.compose-groups [data-cmd]:hover { color: var(--accent); }
+
+/* ---------- Blocco D: layout del pannello di lettura ----------
+   "Sotto la lista" è il layout normale (colonna). "A destra" mette la lista a
+   sinistra e la lettura a destra con una griglia, senza toccare il DOM.
+   "Nascosto" toglie il pannello e il separatore. */
+.main--lettura-destra {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  min-height: 0;
+}
+.main--lettura-destra .list-head { grid-column: 1; grid-row: 1; }
+.main--lettura-destra .list { grid-column: 1; grid-row: 2; overflow: auto; }
+.main--lettura-destra .pane-sep { display: none; }
+.main--lettura-destra .reading {
+  grid-column: 2; grid-row: 1 / span 2;
+  border-left: 1px solid var(--pane-sep);
+}
+.main--lettura-nascosta .reading,
+.main--lettura-nascosta .pane-sep { display: none; }
+
+/* Anteprima del testo nella lista ("Mostra l'anteprima del testo nella lista"). */
+.row-preview { color: var(--text-secondary); font-weight: 400; }
+.row--sel .row-preview { color: inherit; opacity: .85; }
+
+/* A capo automatico nel corpo di composizione. */
+.compose-body--acapo { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* "Apri le risposte in una nuova finestra": la seconda bozza si affianca. */
+.compose-overlay--nuova { transform: translate(26px, 26px); }
+
+/* ---------- Blocco D: campi dei pannelli Lettura/Composizione/Carattere ---------- */
+.settings-riga--colonna { flex-direction: column; gap: 6px; }
+.settings-inline { display: flex; align-items: center; gap: 8px; }
+.settings-fld--num { width: 76px; }
+.settings-fld--ora { width: 110px; }
+.im-nota { font-size: 11px; color: var(--ai-text-dim); }
+.im-anteprima {
+  border: 1px solid var(--campo-bordo); border-radius: 6px;
+  padding: 10px 12px; margin-top: 4px; color: var(--text-primary);
+}
+.im-tab-sost { margin: 6px 0; display: flex; flex-direction: column; gap: 2px; }
+.im-riga-sost {
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 6px; font-size: 12px;
+  border-bottom: 1px solid var(--settings-gsep);
+}
+.im-da { font-family: ui-monospace, "SF Mono", monospace; color: var(--text-primary); }
+.im-freccia { color: var(--ai-text-dim); }
+.im-a { font-family: ui-monospace, "SF Mono", monospace; color: var(--accent); }
+.im-x {
+  margin-left: auto; border: 0; background: none; cursor: pointer;
+  color: var(--text-secondary); font-size: 12px; font-family: inherit;
+}
+.im-x:hover { color: #E06C6C; }
+.im-aggiungi { grid-template-columns: 1fr 1fr; gap: 8px; }
+.mail-settings-win { width: 560px; }
+
+/* ---------- Rubrica dei contatti (blocco F) ---------- */
+.cmp-row--ccn { height: 22px; }
+
+.rubrica-overlay {
+  position: fixed; inset: 0; z-index: 88;
+  background: rgba(0, 0, 0, .45);
+  display: flex; align-items: center; justify-content: center;
+}
+.rubrica-win {
+  --rubrica-bg: #313335;      /* M — §2.5, come la finestra Impostazioni */
+  --rubrica-chrome: #262628;  /* M — §2.5 */
+  --rubrica-gsep: #494B4D;    /* M — §2.5 */
+  background: var(--rubrica-bg);
+  color: var(--text-primary);
+  width: 760px; height: 520px;
+  max-width: calc(100vw - 24px); max-height: calc(100vh - 24px);
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--pane-sep); border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+}
+:root[data-theme="light"] .rubrica-win {
+  --rubrica-bg: #F3F2F1;     /* M — mockup, tema chiaro */
+  --rubrica-chrome: #F5F5F5; /* M */
+  --rubrica-gsep: #D2D0CE;   /* M */
+}
+.rubrica-titlebar {
+  flex: 0 0 auto; height: 26px;
+  background: var(--rubrica-chrome);
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px; font-weight: 600; font-size: 14px;
+}
+.rubrica-title { flex: 1; }
+.rubrica-toolbar {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-bottom: 1px solid var(--rubrica-gsep); flex-wrap: wrap;
+}
+.rubrica-cerca-box {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--window-bg); border: 1px solid var(--campo-bordo);
+  border-radius: 6px; padding: 0 8px; height: 26px; min-width: 220px;
+}
+.rubrica-cerca-box:focus-within { border-color: var(--campo-focus); }
+.rubrica-cerca {
+  border: 0; outline: none; background: transparent; font: inherit;
+  font-size: 12px; color: var(--text-primary); width: 190px;
+}
+.rubrica-btn {
+  border: 1px solid var(--btn-border); border-radius: 6px;
+  padding: 4px 12px; font-size: 12px; cursor: pointer; font-family: inherit;
+  background: var(--window-bg); color: var(--text-primary);
+}
+.rubrica-btn:hover { background: var(--row-hover-bg); }
+.rubrica-btn--ok { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.rubrica-corpo {
+  flex: 1 1 auto; display: grid; grid-template-columns: 1fr 300px;
+  min-height: 0; overflow: hidden;
+}
+.rubrica-lista { overflow-y: auto; padding: 6px 0; }
+.rubrica-riga {
+  display: flex; align-items: baseline; gap: 8px; padding: 5px 14px;
+  cursor: default; font-size: 12px; border-left: 3px solid transparent;
+}
+.rubrica-riga:hover { background: var(--row-hover-bg); }
+.rubrica-riga--sel { background: var(--sidebar-sel-bg); border-left-color: var(--accent); }
+.rubrica-nome { font-weight: 600; }
+.rubrica-mail { color: var(--text-secondary); }
+.rubrica-azienda { margin-left: auto; color: var(--ai-text-dim); font-size: 11px; }
+.rubrica-vuoto { padding: 22px 16px; color: var(--text-secondary); font-size: 12px; }
+.rubrica-scheda {
+  border-left: 1px solid var(--rubrica-gsep); padding: 10px 14px; overflow-y: auto;
+}
+.rubrica-modulo-titolo { font-weight: 700; font-size: 13px; margin-bottom: 8px; }
+.rubrica-campo { display: block; margin-bottom: 8px; font-size: 11px; color: var(--text-secondary); }
+.rubrica-campo span { display: block; margin-bottom: 2px; }
+.rubrica-campo input {
+  width: 100%; height: 26px; padding: 0 8px; box-sizing: border-box;
+  background: var(--window-bg); border: 1px solid var(--campo-bordo);
+  border-radius: 6px; font: inherit; font-size: 12px; color: var(--text-primary); outline: none;
+}
+.rubrica-campo input:focus { border: 2px solid var(--campo-focus); }
+.rubrica-modulo-azioni { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+.rubrica-nota {
+  flex: 0 0 auto; padding: 6px 14px 10px; font-size: 12px;
+  color: var(--text-secondary); min-height: 18px;
+}
+.rubrica-nota--errore { color: #E06C6C; }
+.rubrica-conferma {
+  position: absolute; inset: 0; z-index: 2;
+  background: rgba(0, 0, 0, .35);
+  display: flex; align-items: center; justify-content: center;
+}
+.rubrica-conferma-box {
+  width: 380px; max-width: calc(100% - 32px);
+  background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--pane-sep); border-radius: 10px; padding: 16px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .45); font-size: 13px;
+}
+.rubrica-conferma-box p { margin: 0 0 12px; }
+
+/* Riquadro dei suggerimenti dei destinatari (blocco F) */
+.cmp-sugg {
+  position: fixed; z-index: 95;
+  background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--pane-sep); border-radius: 8px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .4);
+  max-height: 220px; overflow-y: auto; padding: 3px 0;
+}
+.cmp-sugg-voce {
+  display: flex; align-items: baseline; gap: 6px;
+  padding: 4px 10px; font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+.cmp-sugg-voce--sel { background: var(--row-sel-bg); color: var(--text-on-select); }
+.cmp-sugg-nome { font-weight: 600; }
+.cmp-sugg-mail { color: var(--text-secondary); }
+.cmp-sugg-voce--sel .cmp-sugg-mail { color: var(--text-on-select); }
+.cmp-sugg-origine { margin-left: auto; font-size: 10px; color: var(--ai-text-dim); }
+.mail-sender .add-contact { margin-left: 10px; }
+
+/* ---------- Inviti di riunione e agenda a elenco (blocco G) ---------- */
+
+/* Barra discreta dell'invito, in cima al messaggio aperto: stesso registro
+   visivo della barra informativa, con i pulsanti di risposta a destra. */
+.invito-bar {
+  flex: 0 0 auto;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px;
+  padding: 5px 16px;
+  background: var(--info-bar-bg);
+  border-bottom: 1px solid var(--row-sep);
+  font-size: 12px;
+}
+.invito-bar .invito-ic { flex: 0 0 auto; font-size: 15px; }
+.invito-testo { min-width: 0; }
+.invito-quando { color: var(--text-secondary); margin-left: 8px; }
+.invito-nota-ric { color: var(--text-secondary); margin-left: 8px; font-style: italic; }
+.invito-stato {
+  margin-left: auto; flex: 0 0 auto;
+  border: 1px solid var(--btn-border); border-radius: 10px;
+  padding: 1px 9px; font-size: 11px; font-weight: 600;
+}
+.invito-stato--accettato { border-color: #3FA34D; color: #3FA34D; }
+.invito-stato--tentativo { border-color: #E0A83F; color: #E0A83F; }
+.invito-stato--rifiutato { border-color: #E06C6C; color: #E06C6C; }
+.invito-stato--annullato { border-color: var(--text-secondary); color: var(--text-secondary); }
+.invito-azioni { display: inline-flex; gap: 6px; margin-left: auto; }
+.invito-stato + .invito-azioni { margin-left: 10px; }
+.invito-btn {
+  border: 1px solid var(--btn-border); border-radius: 6px;
+  padding: 3px 10px; font-size: 11px; cursor: pointer; font-family: inherit;
+  background: var(--window-bg); color: var(--text-primary);
+}
+.invito-btn:hover { background: var(--row-hover-bg); }
+.invito-btn:disabled { opacity: .55; cursor: default; }
+.invito-btn--ok { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
+.invito-esito { flex-basis: 100%; color: var(--text-secondary); font-size: 11px; }
+.invito-esito--errore { color: #E06C6C; }
+
+/* ---------- Agenda a elenco ---------- */
+.agenda-overlay, .nuova-overlay {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(0, 0, 0, .45);
+  display: flex; align-items: center; justify-content: center;
+}
+.agenda-win, .nuova-win {
+  --agenda-bg: #313335;      /* M — come la finestra Impostazioni/Rubrica */
+  --agenda-chrome: #262628;  /* M */
+  --agenda-gsep: #494B4D;    /* M */
+  background: var(--agenda-bg);
+  color: var(--text-primary);
+  width: 860px; height: 540px;
+  max-width: calc(100vw - 24px); max-height: calc(100vh - 24px);
+  display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--pane-sep); border-radius: 10px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+}
+.nuova-win { width: 560px; height: auto; }
+:root[data-theme="light"] .agenda-win,
+:root[data-theme="light"] .nuova-win {
+  --agenda-bg: #F3F2F1;     /* M — mockup, tema chiaro */
+  --agenda-chrome: #F5F5F5; /* M */
+  --agenda-gsep: #D2D0CE;   /* M */
+}
+.agenda-titlebar {
+  flex: 0 0 auto; height: 26px;
+  background: var(--agenda-chrome);
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 12px; font-weight: 600; font-size: 14px;
+}
+.agenda-title { flex: 1; }
+.agenda-nuova { margin-left: auto; }
+.agenda-avvertenza {
+  flex: 0 0 auto; margin: 0; padding: 8px 14px;
+  font-size: 11px; color: var(--text-secondary);
+  border-bottom: 1px solid var(--agenda-gsep);
+}
+.agenda-corpo { flex: 1 1 auto; overflow-y: auto; padding: 6px 0 10px; }
+.agenda-gruppo-titolo {
+  padding: 6px 14px 3px; font-weight: 700; font-size: 11px;
+  color: var(--text-secondary); text-transform: uppercase; letter-spacing: .04em;
+}
+.agenda-riga {
+  display: grid;
+  grid-template-columns: 205px minmax(120px, 1fr) 150px 118px 96px;
+  align-items: center; gap: 8px;
+  padding: 6px 14px; border-bottom: 1px solid var(--agenda-gsep);
+  font-size: 12px;
+}
+.agenda-riga:hover { background: var(--row-hover-bg); }
+.agenda-riga > * { min-width: 0; }
+.agenda-quando { color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agenda-oggetto { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agenda-chi { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agenda-dove { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agenda-stato { font-size: 11px; font-weight: 600; }
+.agenda-stato--accettato { color: #3FA34D; }
+.agenda-stato--tentativo { color: #E0A83F; }
+.agenda-stato--rifiutato { color: #E06C6C; }
+.agenda-stato--annullato { color: var(--text-secondary); text-decoration: line-through; }
+.agenda-ric { grid-column: 1 / -1; font-size: 10px; color: var(--text-secondary); font-style: italic; }
+.agenda-azioni { grid-column: 1 / -1; display: flex; gap: 6px; justify-content: flex-end; }
+.agenda-vuoto { padding: 22px 18px; color: var(--text-secondary); font-size: 12px; }
+.agenda-nota { flex: 0 0 auto; padding: 6px 14px 10px; font-size: 12px; color: var(--text-secondary); min-height: 18px; }
+.agenda-nota--errore { color: #E06C6C; }
+
+/* ---------- Nuova riunione ---------- */
+.nuova-corpo { padding: 12px 16px 16px; overflow-y: auto; }
+.nu-due { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.nu-check { display: block; font-size: 12px; margin: 4px 0 10px; }
+.nuova-corpo textarea {
+  width: 100%; padding: 6px 8px; box-sizing: border-box; resize: vertical;
+  background: var(--window-bg); border: 1px solid var(--campo-bordo);
+  border-radius: 6px; font: inherit; font-size: 12px; color: var(--text-primary); outline: none;
+}
+.nuova-corpo textarea:focus { border: 2px solid var(--campo-focus); }
+.nu-azioni { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.nuova-nota { margin-top: 8px; font-size: 12px; color: var(--text-secondary); min-height: 18px; }
+.nuova-nota--errore { color: #E06C6C; }
+
+/* ---------- Blocco I1: menu contestuali, preferiti, finestrelle ---------- */
+/* Sottomenu «Contrassegna»: un secondo livello sopra il menu principale. */
+.rb-menu--sottomenu { z-index: 41; }
+.rb-menu-freccia { flex: 0 0 auto; margin-left: 6px; color: var(--text-secondary); font-size: 10px; }
+/* Cartella fra i Preferiti: la stella in testa (disegnata da renderSidebar). */
+.folder--preferita { font-weight: 600; }
+/* Blocco J: il nodo aggregato «Tutti gli account» e la sua Posta in arrivo. */
+.folder--aggregato { font-weight: 600; }
+/* Blocco J: il nodo della casella predefinita (quella aperta all'avvio). */
+.folder--predefinito { font-weight: 600; }
+.folder { cursor: pointer; }
+
+.i1-overlay {
+  position: fixed; inset: 0; z-index: 120;
+  background: rgba(0, 0, 0, .35);
+  display: flex; align-items: center; justify-content: center;
+}
+.i1-modale {
+  width: 420px; max-width: calc(100% - 32px);
+  background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--pane-sep); border-radius: 10px; padding: 16px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .45); font-size: 13px;
+}
+.i1-modale-titolo { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+.i1-modale-testo { margin: 0 0 12px; line-height: 1.5; }
+.i1-modale-input {
+  width: 100%; box-sizing: border-box; height: 28px;
+  padding: 0 8px; margin-bottom: 12px;
+  background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--campo-bordo); border-radius: 6px;
+  font: inherit; font-size: 13px; outline: none;
+}
+.i1-modale-input:focus { border: 2px solid var(--campo-focus); }
+.i1-modale-azioni { display: flex; gap: 8px; justify-content: flex-end; }
+.i1-btn {
+  min-width: 92px; height: 30px; padding: 0 12px;
+  font: inherit; font-size: 13px; cursor: pointer;
+  background: transparent; color: var(--text-primary);
+  border: 1px solid var(--btn-border); border-radius: 6px;
+}
+.i1-btn:hover { background: var(--row-hover-bg); }
+.i1-btn--ok { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.i1-btn--ok:hover { background: var(--accent-hover); }
+
+/* Varianti dell'accento «premuto» e «disattivato»: le deriva `aspetto.js`
+   (`--accent-pressed`, `--accent-disabled`) e qui si consumano, come l'`:hover`
+   già fa con `--accent-hover`; senza queste regole i due token restavano morti. */
+.i1-btn--ok:active,
+.ai-btn--primary:active,
+.rubrica-btn--ok:active,
+.invito-btn--ok:active,
+.i2-ricerca-azioni .cmp-cont-lostesso:active { background: var(--accent-pressed); }
+.i1-btn--ok:disabled,
+.ai-btn--primary:disabled,
+.rubrica-btn--ok:disabled,
+.invito-btn--ok:disabled,
+.i2-ricerca-azioni .cmp-cont-lostesso:disabled {
+  background: var(--accent-disabled);
+  border-color: var(--accent-disabled);
+  cursor: default;
+}
+/* Questi due portano la tinta con `!important`: la variante deve fare altrettanto. */
+.consenso-si:active,
+.cmp-prompt-ok:active { background: var(--accent-pressed) !important; }
+.consenso-si:disabled,
+.cmp-prompt-ok:disabled { background: var(--accent-disabled) !important; cursor: default; }
+
+/* ---------------------------------------------------------------------------
+   Blocco I2 — densità della lista, ricerca avanzata, conferme, zoom,
+   formattazione estesa, invii programmati, pannelli delle impostazioni.
+   --------------------------------------------------------------------------- */
+
+/* Densità di visualizzazione: cambia davvero l'altezza delle righe. */
+.list[data-densita="compatta"] .row { min-height: 20px; padding-top: 1px; padding-bottom: 1px; font-size: 12px; }
+.list[data-densita="accogliente"] .row { min-height: 28px; padding-top: 3px; padding-bottom: 3px; font-size: 13px; }
+.list[data-densita="spaziosa"] .row { min-height: 38px; padding-top: 8px; padding-bottom: 8px; font-size: 14px; }
+.list[data-densita] .row-preview { font-size: 0.94em; }
+
+/* Modulo della ricerca avanzata. */
+.i2-ricerca-win {
+  position: relative; width: 520px; max-width: 92vw; margin: 8vh auto 0;
+  background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--btn-border); border-radius: 10px; overflow: hidden;
+  box-shadow: 0 18px 48px rgba(0,0,0,.45);
+}
+.i2-ricerca-campi { padding: 12px 16px 4px; display: flex; flex-direction: column; gap: 8px; }
+.i2-ricerca-azioni { display: flex; gap: 8px; justify-content: flex-end; padding: 8px 16px 14px; }
+.i2-ricerca-azioni button, .i2-annulla, .cmp-later-preset button {
+  min-width: 96px; height: 30px; padding: 0 12px; font: inherit; font-size: 13px; cursor: pointer;
+  background: transparent; color: var(--text-primary);
+  border: 1px solid var(--btn-border); border-radius: 6px;
+}
+.i2-ricerca-azioni .cmp-cont-lostesso { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.i2-ricerca-azioni button:hover, .cmp-later-preset button:hover { background: var(--row-hover-bg); }
+
+/* Barra della conferma di lettura/recapito (arrivo). */
+.i2-conferma { display: flex; align-items: center; gap: 10px; }
+.i2-conferma span { flex: 0 1 auto; }
+.i2-conferma button {
+  min-width: 0; height: 26px; padding: 0 10px; font: inherit; font-size: 12px; cursor: pointer;
+  background: transparent; color: var(--text-primary);
+  border: 1px solid var(--btn-border); border-radius: 6px;
+}
+.i2-conferma button:hover { background: var(--row-hover-bg); }
+.i2-conf-invia { border-color: var(--accent) !important; color: var(--accent) !important; }
+
+/* Pannelli Scelte rapide / Impostazioni personali. */
+.i2-scorciatoie { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; }
+.i2-scorciatoia { display: grid; grid-template-columns: 120px 1fr; gap: 12px; padding: 6px 10px; border-radius: 6px; }
+.i2-scorciatoia:nth-child(odd) { background: var(--group-row-bg); }
+.i2-tasti { font-family: ui-monospace, Menlo, monospace; color: var(--text-secondary); }
+.i2-azione { color: var(--text-primary); }
+.i2-contesto { grid-column: 2; font-size: 12px; color: var(--text-placeholder); }
+
+/* Popover della composizione: conferme e invio più tardi. */
+.cmp-conf-pop, .cmp-later-pop {
+  position: absolute; top: 108px; right: 18px; z-index: 40; width: 340px;
+  padding: 12px 14px; background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--btn-border); border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0,0,0,.4); display: flex; flex-direction: column; gap: 6px;
+}
+.cmp-conf-pop .ai-check { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.cmp-later-preset { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+.cmp-later-preset button { min-width: 0; height: 26px; font-size: 12px; }
+.cmp-later-pop .cmp-prompt-azioni { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+
+/* Riga di stato della composizione (zoom, conferme, invio programmato). */
+.cmp-i2-stato {
+  margin: 0 14px 6px; padding: 6px 10px; font-size: 12px; color: var(--text-secondary);
+  background: var(--info-bar-bg); border-radius: 6px;
+}
+/* Etichette del modulo di ricerca avanzata: larghezza sufficiente a non andare a capo. */
+.i2-ricerca-campi .cmp-label { min-width: 118px; }
+
+/* =====================================================================
+   Blocco P — Aspetto e Accessibilità.
+   Le classi (`movimento-ridotto`, `contrasto-elevato`, `etichette-pulsanti`)
+   e la variabile `--ui-scala-testo` le mette `src/views/accessibilita.js` sul
+   <html>; il colore accento lo scrive `src/views/aspetto.js` in un foglio di
+   stile a parte. Qui stanno solo gli effetti.
+   ===================================================================== */
+
+/* Le animazioni dell'interfaccia: i pannelli entrano con una breve comparsa.
+   «Riduci movimento» (Accessibilità) le spegne tutte — è il motivo per cui
+   esistono: senza di esse quell'opzione non avrebbe nulla da disattivare. */
+@keyframes pannello-entra {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.settings-overlay,
+.ai-settings-overlay,
+.mail-settings-overlay {
+  animation: pannello-entra .16s ease-out;
+}
+.row, .folder, .rb, .settings-tile, .tab, .conv-toggle, button {
+  transition: background-color .12s ease, color .12s ease, border-color .12s ease;
+}
+
+/* Riduci movimento: nessuna transizione, animazione o scorrimento animato. */
+:root.movimento-ridotto *,
+:root.movimento-ridotto *::before,
+:root.movimento-ridotto *::after {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* Aumenta contrasto: bordi e testi secondari più marcati, nei due temi.
+   Regole combinate col tema, così prevalgono sui token di `tokens.css`. */
+:root[data-theme="dark"].contrasto-elevato {
+  --btn-border:       #8A8A8A;
+  --campo-bordo:      #8A8A8A;
+  --pane-sep:         #9A9A9A;
+  --sidebar-sep:      #9A9A9A;
+  --row-sep:          #8A8A8A;
+  --text-secondary:   #DADADA;
+  --text-primary:     #FFFFFF;
+  --text-placeholder: #C0C0C0;
+}
+:root[data-theme="light"].contrasto-elevato {
+  --btn-border:       #5A5A5A;
+  --campo-bordo:      #5A5A5A;
+  --pane-sep:         #5A5A5A;
+  --sidebar-sep:      #5A5A5A;
+  --row-sep:          #5A5A5A;
+  --text-secondary:   #333333;
+  --text-primary:     #000000;
+  --text-placeholder: #4A4A4A;
+}
+
+/* Mostra sempre le etichette dei pulsanti (attivo di default). Spenta, la barra
+   multifunzione resta di sole icone. */
+:root:not(.etichette-pulsanti) .ribbon-groups .rb .lb { display: none; }
+
+/* ---------- pannello «Aspetto» — tavolozza dell'accento ---------- */
+.aspetto-tinte { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 2px; }
+.aspetto-tinta {
+  display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px 0 8px;
+  background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--btn-border); border-radius: 15px; cursor: pointer; font-size: 12px;
+}
+.aspetto-tinta--scelta { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.aspetto-tinta-pallino {
+  width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, .25);
+}
+
+/* Nota in grassetto per le voci dichiarate non disponibili. */
+.im-nota--forte { color: var(--text-secondary); }

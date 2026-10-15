@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Impostazioni — mockup</title>
+<style>
+  html,body{margin:0;padding:0;background:#111;font-family:-apple-system,'Segoe UI',sans-serif;}
+  .winie{ --wbg:#1F1F20; --chrome:#262627; --panel:#181819; --text:#E6E6E6; --text2:#B3B3B3;
+          --field:#1E1E1E; --fldborder:#3A3A3B; --sep:#353535; --group:#313335; --gsep:#494B4D;
+          --focus:#416D97; --accent:#4BA0FF; --accenttext:#1E1E1E; --aibox:#141414; --aic:#7B83EB;
+          --aidim:#9C9C9C; --ok:#28C840; }
+  .winie.light{ --wbg:#FFFFFF; --chrome:#F5F5F5; --panel:#FAF9F8; --text:#242424; --text2:#605E5C;
+          --field:#FFFFFF; --fldborder:#C8C6C4; --sep:#E1DFDD; --group:#F3F2F1; --gsep:#D2D0CE;
+          --focus:#0078D7; --accent:#0078D7; --accenttext:#FFFFFF; --aibox:#F3F2F1; --aic:#7B83EB;
+          --aidim:#605E5C; --ok:#107C10; }
+  .tb{height:26px;background:var(--chrome);display:flex;align-items:center;gap:10px;padding:0 12px;color:var(--text);font-weight:600;}
+  .dots{display:inline-flex;gap:7px;}
+  .dots i{width:11px;height:11px;border-radius:50%;display:inline-block;}
+  .tile{width:96px;text-align:center;font-size:11px;color:var(--text);}
+  .tile .ic{font-size:26px;line-height:1.1;}
+  .tile .lb{margin-top:5px;line-height:1.25;}
+  .btn{border:1px solid var(--fldborder);border-radius:6px;padding:5px 12px;font-size:12px;color:var(--text);background:var(--field);}
+  .fld{background:var(--field);border:1px solid var(--fldborder);border-radius:6px;height:26px;}
+  .lbl{font-size:12px;color:var(--text);text-align:right;padding-right:12px;}
+  .sec{font-weight:700;font-size:12px;color:var(--text);margin:10px 0 4px;}
+  .hr{border-top:1px solid var(--gsep);margin:10px 0 4px;}
+  .cb{width:14px;height:14px;border-radius:4px;border:1px solid var(--fldborder);display:inline-block;vertical-align:-2px;background:var(--field);}
+  .cb.on{background:var(--focus);border-color:var(--focus);color:#fff;font-size:10px;text-align:center;line-height:13px;}
+</style>
+</head>
+<body>
+<div id="root" style="display:flex;flex-direction:column;gap:18px;padding:0;">
+
+  <!-- 1. Impostazioni di Outlook -->
+  <div class="winie" style="width:992px;background:var(--group);color:var(--text);">
+    <div class="tb">
+      <span class="dots"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i></span>
+      <span style="font-size:14px;">Impostazioni di Outlook</span>
+      <span class="btn" style="margin-left:auto;">Mostra tutte</span>
+    </div>
+
+    <div style="padding:10px 0 0;">
+      <div style="padding:0 18px 8px;font-weight:700;font-size:13px;">Impostazioni personali</div>
+      <div style="display:flex;gap:6px;padding:0 18px 12px;">
+        <div class="tile"><div class="ic">📄</div><div class="lb">Generale</div></div>
+        <div class="tile"><div class="ic">👤</div><div class="lb">Account</div></div>
+        <div class="tile"><div class="ic">🕑</div><div class="lb">Notifiche e suoni</div></div>
+        <div class="tile"><div class="ic">🎨</div><div class="lb">Categorie</div></div>
+        <div class="tile"><div class="ic">Aa</div><div class="lb">Tipi di carattere</div></div>
+        <div class="tile"><div class="ic">ABC</div><div class="lb">Correzione automatica</div></div>
+        <div class="tile"><div class="ic">✓ABC</div><div class="lb">Ortografia e grammatica</div></div>
+      </div>
+
+      <div class="hr" style="margin:0;"></div>
+      <div style="padding:10px 18px 8px;font-weight:700;font-size:13px;">Posta elettronica</div>
+      <div style="display:flex;gap:6px;padding:0 18px 12px;">
+        <div class="tile"><div class="ic">✉︎</div><div class="lb">Lettura</div></div>
+        <div class="tile"><div class="ic">✎</div><div class="lb">Composizione</div></div>
+        <div class="tile"><div class="ic">✍︎</div><div class="lb">Firme</div></div>
+        <div class="tile"><div class="ic">⤨</div><div class="lb">Regole</div></div>
+        <div class="tile"><div class="ic">🚫</div><div class="lb">Posta indesiderata</div></div>
+        <!-- AGGIUNTA -->
+        <div style="width:110px;text-align:center;font-size:11px;background:var(--aibox);border:1px solid var(--aic);border-radius:8px;padding:6px 0;">
+          <div class="ic" style="font-size:26px;color:var(--aic);">✦</div>
+          <div class="lb" style="margin-top:5px;font-weight:700;">Assistente IA</div>
+          <div style="font-size:9px;color:var(--aidim);margin-top:1px;">locale di default</div>
+        </div>
+      </div>
+
+      <div class="hr" style="margin:0;"></div>
+      <div style="padding:10px 18px 8px;font-weight:700;font-size:13px;">Altro</div>
+      <div style="display:flex;gap:6px;padding:0 18px 14px;">
+        <div class="tile"><div class="ic">▦</div><div class="lb">Calendario</div></div>
+        <div class="tile"><div class="ic">👥</div><div class="lb">Contatti</div></div>
+        <div class="tile"><div class="ic">🛡</div><div class="lb">Privacy</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:18px;align-items:flex-start;">
+
+    <!-- 2. Assistente IA (pannello nuovo) -->
+    <div class="winie" style="width:640px;background:var(--wbg);color:var(--text);">
+      <div class="tb">
+        <span class="dots"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i></span>
+        <span style="font-size:14px;">Assistente IA</span>
+        <span class="btn" style="margin-left:auto;">Mostra tutte</span>
+      </div>
+      <div style="padding:14px 22px 20px;">
+        <div class="sec" style="margin-top:0;">Motore</div>
+        <div class="hr" style="margin:0 0 8px;"></div>
+        <div style="display:flex;gap:14px;align-items:center;font-size:12px;margin-bottom:8px;">
+          <span><span class="cb on">✓</span> Locale (consigliato)</span>
+          <span><span class="cb"></span> OpenRouter (cloud)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;">
+          <div class="lbl">Endpoint locale:</div><div class="fld" style="padding:4px 8px;font-size:12px;">http://127.0.0.1:8080/v1</div>
+          <div class="lbl">Modello locale:</div><div class="fld" style="padding:4px 8px;font-size:12px;">thinkingcap-27b · Splash-M1 ▾</div>
+          <div class="lbl">Modello cloud:</div><div class="fld" style="padding:4px 8px;font-size:12px;">openrouter/auto ▾</div>
+        </div>
+
+        <div class="sec">Privacy</div>
+        <div class="hr" style="margin:0 0 8px;"></div>
+        <div style="font-size:12px;margin-bottom:6px;"><span class="cb on">✓</span> Chiedi conferma prima di ogni invio al cloud</div>
+        <div style="font-size:12px;margin-bottom:6px;"><span class="cb on">✓</span> Registra le richieste inviate al cloud (per tracciabilità)</div>
+        <div style="font-size:12px;margin-bottom:6px;"><span class="cb"></span> Invia al cloud anche i messaggi citati nel thread</div>
+        <div style="font-size:11px;color:var(--aidim);margin:8px 0 0;">Registro: 0 invii negli ultimi 30 giorni · <span style="color:var(--accent);text-decoration:underline;">apri il registro</span></div>
+
+        <div class="sec">Comportamento</div>
+        <div class="hr" style="margin:0 0 8px;"></div>
+        <div style="font-size:12px;margin-bottom:6px;"><span class="cb on">✓</span> Avvia il modello locale all'apertura dell'app</div>
+        <div style="display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;margin-top:6px;">
+          <div class="lbl">Tono delle bozze:</div><div class="fld" style="padding:4px 8px;font-size:12px;">Formale ▾</div>
+          <div class="lbl">Lingua risposte:</div><div class="fld" style="padding:4px 8px;font-size:12px;">Italiano ▾</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Account (dal riferimento, valori Esempio Host) -->
+    <div class="winie" style="width:738px;background:var(--wbg);color:var(--text);">
+      <div class="tb">
+        <span class="dots"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#8E8E93"></i></span>
+        <span style="font-size:14px;">Account</span>
+        <span class="btn" style="margin-left:auto;">Mostra tutte</span>
+      </div>
+      <div style="display:flex;min-height:660px;">
+        <div style="width:200px;background:var(--panel);border-right:1px solid var(--sep);padding:10px 8px;position:relative;">
+          <div style="background:var(--sep);border-radius:8px;padding:8px 10px;">
+            <div style="font-size:11px;color:var(--text2);">Account predefinito</div>
+            <div style="font-size:13px;font-weight:700;margin-top:2px;"><span style="color:var(--ok);">●</span> mario.rossi…</div>
+            <div style="font-size:11px;color:var(--text2);">mario.rossi@esempio…</div>
+          </div>
+          <div style="position:absolute;left:8px;right:8px;bottom:10px;display:flex;gap:8px;align-items:center;font-size:13px;color:var(--text2);">
+            <span class="btn" style="padding:2px 8px;">＋ ▾</span><span class="btn" style="padding:2px 8px;">−</span>
+            <span class="btn" style="padding:2px 8px;margin-left:auto;">⋯ ▾</span>
+          </div>
+        </div>
+
+        <div style="flex:1;padding:16px 26px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span style="width:34px;height:26px;border:1px solid var(--fldborder);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--accent);">IMAP</span>
+            <div>
+              <div style="font-size:16px;font-weight:700;">mario.rossi@esempiogroup.it</div>
+              <div style="font-size:12px;color:var(--text2);">Account IMAP</div>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;margin-top:16px;">
+            <div class="lbl">Descrizione account:</div><div class="fld" style="padding:4px 8px;font-size:12px;">mario.rossi@esempiogroup.it</div>
+          </div>
+
+          <div class="sec">Informazioni personali</div>
+          <div class="hr" style="margin:0 0 8px;"></div>
+          <div style="display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;">
+            <div class="lbl">Nome completo:</div><div class="fld" style="padding:4px 8px;font-size:12px;">Mario Rossi</div>
+            <div class="lbl">Indirizzo email:</div><div class="fld" style="padding:4px 8px;font-size:12px;">mario.rossi@esempiogroup.it</div>
+          </div>
+
+          <div class="sec">Informazioni server</div>
+          <div class="hr" style="margin:0 0 8px;"></div>
+          <div style="display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;">
+            <div class="lbl">Nome utente:</div><div class="fld" style="padding:4px 8px;font-size:12px;">mario.rossi@esempiogroup.it</div>
+            <div class="lbl">Password:</div><div class="fld" style="padding:4px 8px;font-size:12px;letter-spacing:2px;">••••••••••••</div>
+            <div class="lbl">Server posta in arrivo:</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div class="fld" style="flex:1;padding:4px 8px;font-size:12px;">imaps.esempiohost.it</div><span style="color:var(--text2);">:</span>
+              <div class="fld" style="width:70px;padding:4px 8px;font-size:12px;">993</div>
+            </div>
+          </div>
+          <div style="margin:8px 0 10px 180px;font-size:12px;color:var(--text);">
+            <div><span class="cb"></span> Ignora porta predefinita</div>
+            <div style="margin-top:4px;"><span class="cb on">✓</span> Usa SSL per la connessione (scelta consigliata)</div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:170px 1fr;gap:10px;align-items:center;">
+            <div class="lbl">Server posta in uscita:</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <div class="fld" style="flex:1;padding:4px 8px;font-size:12px;">smtps.esempiohost.it</div><span style="color:var(--text2);">:</span>
+              <div class="fld" style="width:70px;padding:4px 8px;font-size:12px;">465</div>
+            </div>
+          </div>
+          <div style="margin:8px 0 10px 180px;font-size:12px;color:var(--text);">
+            <div><span class="cb"></span> Ignora porta predefinita</div>
+            <div style="margin-top:4px;"><span class="cb on">✓</span> Usa SSL per la connessione (scelta consigliata)</div>
+            <div style="margin-top:8px;"><span class="btn">Altre opzioni…</span></div>
+          </div>
+
+          <div style="text-align:right;margin-top:26px;"><span class="btn">Avanzate…</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>if (location.hash.indexOf("light")>=0) document.getElementById("root").querySelectorAll('.winie').forEach(e=>e.classList.add('light'));</script>
+</body>
+</html>

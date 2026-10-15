@@ -1,0 +1,440 @@
+/**
+ * Azioni sui messaggi della finestra principale (blocco A).
+ *
+ * Il modulo ha due parti ben separate:
+ * - le funzioni PURE (filtri e resa di una riga) — le usano `renderList` e i
+ *   test `node:test`, senza toccare il DOM e senza dipendere dal kernel;
+ * - il menu a comparsa (`apriMenu`) e i nomi delle voci, condivisi dal ribbon
+ *   per Sposta / Categorizza / Filtra.
+ *
+ * I nomi e gli argomenti dei comandi del kernel sono quelli del contratto:
+ * `{ folder, uid, … }` — qui non si chiama il kernel, si descrive soltanto lo
+ * stato; la chiamata vive in `src/main.js`.
+ */
+
+/** Filtri del menu "Filtra posta elettronica", nell'ordine del riferimento. */
+export const FILTRI = [
+  { id: "tutti", etichetta: "Tutti" },
+  { id: "non-letti", etichetta: "Non letti" },
+  { id: "contrassegnati", etichetta: "Contrassegnati" },
+  { id: "allegati", etichetta: "Con allegati" },
+  { id: "oggi", etichetta: "Oggi" },
+];
+
+/** Etichetta leggibile di un filtro (fallback: "Tutti"). */
+export function etichettaFiltro(id) {
+  const f = FILTRI.find((x) => x.id === id);
+  return f ? f.etichetta : FILTRI[0].etichetta;
+}
+
+/**
+ * Vero se il messaggio è stato ricevuto oggi (stesso giorno di `adesso`).
+ * Come `etichettaGruppo`, un messaggio senza `timestamp` conta come di oggi:
+ * è il caso dei dati di esempio del browser, che non hanno una data Unix.
+ */
+export function messaggioOggi(m, adesso = Date.now()) {
+  if (!m) return false;
+  if (m.timestamp === undefined || m.timestamp === null) return true;
+  const d = new Date(m.timestamp * 1000);
+  const a = new Date(adesso);
+  return (
+    d.getFullYear() === a.getFullYear() &&
+    d.getMonth() === a.getMonth() &&
+    d.getDate() === a.getDate()
+  );
+}
+
+/** Vero se il messaggio supera il filtro indicato. */
+export function passaFiltro(m, filtro, adesso = Date.now()) {
+  if (!m) return false;
+  switch (filtro) {
+    case "non-letti":
+      return !m.seen;
+    case "contrassegnati":
+      return !!m.flagged;
+    case "allegati":
+      return !!m.has_attachments;
+    case "oggi":
+      return messaggioOggi(m, adesso);
+    case "tutti":
+    default:
+      return true;
+  }
+}
+
+/** Applica un filtro a un elenco di messaggi (non muta l'originale). */
+export function filtra(messaggi, filtro = "tutti", adesso = Date.now()) {
+  return (messaggi || []).filter((m) => passaFiltro(m, filtro, adesso));
+}
+
+/** Fuga dell'HTML dei valori che l'utente può scrivere (es. una categoria). */
+export function fugaHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** Vero se il messaggio è stato marcato come completato. */
+export function completatoRiga(m) {
+  return !!(m && m.completed);
+}
+
+/** Categorie di un messaggio (sempre un elenco, mai undefined). */
+export function categorieRiga(m) {
+  return m && Array.isArray(m.categories) ? m.categories.slice() : [];
+}
+
+/** Pallino della colonna sinistra: pieno se NON letto, vuoto se letto. */
+export function pallinoRiga(m) {
+  return m && m.seen ? "○" : "▣";
+}
+
+/** Icona del contrassegno: piena (⚑) solo quando il messaggio è contrassegnato. */
+export function bandieraRiga(m) {
+  return m && m.flagged ? "⚑" : "";
+}
+
+/** Classi CSS della riga, derivate dallo stato del messaggio. */
+export function classiRiga(m) {
+  const classi = ["row"];
+  if (m && !m.seen) classi.push("row--nonletto");
+  if (m && m.flagged) classi.push("row--contrassegnato");
+  if (completatoRiga(m)) classi.push("row--completato");
+  return classi;
+}
+
+/**
+ * Stato di resa di una riga, tutto in un solo oggetto: lo usano `renderList`
+ * e i test. `nonLetto` guida il grassetto, `contrassegnato` l'icona ⚑,
+ * `completato` l'indicatore ✔, `categorie` le targhette.
+ */
+export function statoRiga(m) {
+  return {
+    nonLetto: !(m && m.seen),
+    contrassegnato: !!(m && m.flagged),
+    completato: completatoRiga(m),
+    categorie: categorieRiga(m),
+    pallino: pallinoRiga(m),
+    bandiera: bandieraRiga(m),
+    classi: classiRiga(m),
+  };
+}
+
+/** Categorie offerte dal menu "Categorizza" (l'utente può scriverne altre). */
+export const CATEGORIE_PREDEFINITE = [
+  "Lavoro",
+  "Personale",
+  "Fornitori",
+  "Manutenzione",
+  "Urgente",
+  "Da fare",
+];
+
+/**
+ * Aggiunge o toglie una categoria (interruttore): se c'è la toglie, se non c'è
+ * la mette in coda. Un nome vuoto non cambia nulla. Non muta l'elenco originale.
+ */
+export function alternaCategoria(categorie, nome) {
+  const pulito = String(nome == null ? "" : nome).trim();
+  const attuali = Array.isArray(categorie) ? categorie.slice() : [];
+  if (!pulito) return attuali;
+  const i = attuali.indexOf(pulito);
+  if (i >= 0) attuali.splice(i, 1);
+  else attuali.push(pulito);
+  return attuali;
+}
+
+/**
+ * Nomi leggibili delle voci del ribbon **non disponibili** nella v1: servono a
+ * scrivere una riga di stato chiara invece di lasciare un pulsante muto.
+ *
+ * «Riunione» non compare più qui: dal blocco G (versione inviti) apre l'agenda
+ * a elenco degli inviti di riunione.
+ */
+export const NOMI_VOCI_V1 = {
+  "new-items": "Nuovi elementi",
+  attach: "Allegato",
+  background: "Cambia sfondo",
+};
+
+/** Riga di stato per una voce del ribbon non disponibile nella v1. */
+export function testoNonDisponibileRibbon(chiave) {
+  const nome = NOMI_VOCI_V1[chiave] || chiave;
+  return `${nome}: non disponibile nella v1.`;
+}
+
+/** Insieme delle chiavi del ribbon non disponibili nella v1. */
+export const NON_DISPONIBILI_V1 = new Set(Object.keys(NOMI_VOCI_V1));
+
+// ---------------------------------------------------------------------------
+// Menu contestuali (blocco I1): voci per tipo di elemento, etichette esatte del
+// riferimento e testi delle conferme. Funzioni PURE: le usano il disegno del
+// menu (sotto) e i test `node:test`, senza toccare il DOM.
+// ---------------------------------------------------------------------------
+
+/** Le voci del sottomenu «Contrassegna», con le etichette del riferimento. */
+export const SCADENZE = [
+  { id: "piu-tardi-oggi", etichetta: "Più tardi oggi" },
+  { id: "questa-sera", etichetta: "Questa sera" },
+  { id: "domani", etichetta: "Domani" },
+  { id: "prossima-settimana", etichetta: "Prossima settimana" },
+  { id: "rimuovi", etichetta: "Rimuovi contrassegno" },
+];
+
+/** Etichetta leggibile di una voce di scadenza. */
+export function etichettaScadenza(id) {
+  const v = SCADENZE.find((s) => s.id === id);
+  return v ? v.etichetta : SCADENZE[0].etichetta;
+}
+
+/** Vero se la conversazione a cui appartiene l'elemento è fra quelle ignorate. */
+export function conversazioneIgnorata(m, ignorate) {
+  const chiave = m && m.threadKey;
+  return !!chiave && (ignorate || []).includes(chiave);
+}
+
+/** Le voci del sottomenu «Contrassegna», nella forma delle voci di menu. */
+export function vociSottomenuContrassegna() {
+  return SCADENZE.map((s) => ({ id: `scadenza:${s.id}`, etichetta: s.etichetta, ic: "⚑" }));
+}
+
+/**
+ * Le voci del menu contestuale di un **messaggio** della lista, nell'ordine del
+ * riferimento. Le etichette cambiano con lo stato:
+ * `Segna come già letto` / `Segna come da leggere`,
+ * `Ignora conversazione` / `Non ignorare più`,
+ * `Segna come indesiderato` / `Segna come non indesiderato`.
+ * `opzioni.ignorate` è l'elenco delle chiavi di conversazione ignorate.
+ */
+export function vociMenuMessaggio(m, opzioni = {}) {
+  const ignorate = opzioni.ignorate || [];
+  return [
+    { id: "rispondi", etichetta: "Rispondi", ic: "↩" },
+    { id: "rispondi-tutti", etichetta: "Rispondi a tutti", ic: "↩↩" },
+    { id: "inoltra", etichetta: "Inoltra", ic: "↪" },
+    { id: "rinvia", etichetta: "Rinvia", ic: "↻" },
+    { id: "inoltra-allegato", etichetta: "Inoltra come allegato", ic: "📎" },
+    { sep: true },
+    { id: "copia", etichetta: "Copia nella cartella…", ic: "⧉" },
+    { id: "sposta", etichetta: "Sposta nella cartella…", ic: "↦" },
+    { id: "elimina", etichetta: "Elimina", ic: "🗑" },
+    { id: "archivia", etichetta: "Archivia", ic: "🗄" },
+    { sep: true },
+    { id: "letto", etichetta: m && m.seen ? "Segna come da leggere" : "Segna come già letto", ic: "✉" },
+    { id: "categorizza", etichetta: "Categorizza", ic: "🏷" },
+    { id: "contrassegna", etichetta: "Contrassegna", ic: "⚑", sottomenu: vociSottomenuContrassegna() },
+    { sep: true },
+    { id: "ignora", etichetta: conversazioneIgnorata(m, ignorate) ? "Non ignorare più" : "Ignora conversazione", ic: "🚫" },
+    { id: "indesiderato", etichetta: m && m.indesiderato ? "Segna come non indesiderato" : "Segna come indesiderato", ic: "⛔" },
+  ];
+}
+
+/** Le voci del menu contestuale di una **conversazione** della lista. */
+export function vociMenuConversazione(c, opzioni = {}) {
+  const ignorate = opzioni.ignorate || [];
+  const ignorata = !!c && ignorate.includes(c.chiave);
+  return [
+    { id: "rispondi", etichetta: "Rispondi", ic: "↩" },
+    { id: "rispondi-tutti", etichetta: "Rispondi a tutti", ic: "↩↩" },
+    { id: "inoltra", etichetta: "Inoltra", ic: "↪" },
+    { id: "rinvia", etichetta: "Rinvia", ic: "↻" },
+    { id: "inoltra-allegato", etichetta: "Inoltra come allegato", ic: "📎" },
+    { sep: true },
+    { id: "copia", etichetta: "Copia nella cartella…", ic: "⧉" },
+    { id: "sposta", etichetta: "Sposta nella cartella…", ic: "↦" },
+    { id: "elimina", etichetta: "Elimina", ic: "🗑" },
+    { id: "archivia", etichetta: "Archivia", ic: "🗄" },
+    { sep: true },
+    { id: "letto", etichetta: c && c.seen ? "Segna come da leggere" : "Segna come già letto", ic: "✉" },
+    { id: "contrassegna", etichetta: "Contrassegna", ic: "⚑", sottomenu: vociSottomenuContrassegna() },
+    { sep: true },
+    { id: "ignora", etichetta: ignorata ? "Non ignorare più" : "Ignora conversazione", ic: "🚫" },
+  ];
+}
+
+/**
+ * Le voci del menu contestuale di una **cartella** della barra laterale. Per un
+ * gruppo (account) c'è solo «Nuova cartella»; per una cartella vera tutte le voci
+ * del riferimento, con «Aggiungi a Preferiti» / «Rimuovi da Preferiti» secondo
+ * lo stato.
+ */
+export function vociMenuCartella(cartella) {
+  const nuova = { id: "nuova-cartella", etichetta: "Nuova cartella", ic: "📁" };
+  if (!cartella || cartella.kind === "group") return [nuova];
+  return [
+    nuova,
+    { id: "rinomina-cartella", etichetta: "Rinomina cartella", ic: "✎" },
+    { id: "elimina-cartella", etichetta: "Elimina cartella", ic: "🗑" },
+    { id: "svuota-cartella", etichetta: "Svuota cartella", ic: "🧹" },
+    { sep: true },
+    { id: "segna-tutti-letti", etichetta: "Segna tutti come già letti", ic: "✉" },
+    { id: "preferita", etichetta: cartella.preferita ? "Rimuovi da Preferiti" : "Aggiungi a Preferiti", ic: "★" },
+  ];
+}
+
+/** Testo della conferma prima di **eliminare** una cartella (mai muta). */
+export function testoConfermaEliminaCartella(nome) {
+  return `Eliminare la cartella «${nome}» e tutto il suo contenuto? L'operazione non può essere annullata.`;
+}
+
+/** Testo della conferma prima di **svuotare** una cartella. */
+export function testoConfermaSvuotaCartella(nome) {
+  return `Svuotare la cartella «${nome}»? Tutti i messaggi saranno eliminati definitivamente.`;
+}
+
+/** Testo della conferma dedicata a **Svuota Posta eliminata**. */
+export function testoConfermaSvuotaPostaEliminata() {
+  return "Svuotare Posta eliminata? Tutti i messaggi saranno eliminati definitivamente.";
+}
+
+/** Vero se il nome è la Posta eliminata (per la conferma dedicata). */
+export function ePostaEliminata(nome) {
+  return [
+    "posta eliminata",
+    "trash",
+    "eliminata",
+    "deleted items",
+    "deleted messages",
+    "cestino",
+  ].includes(String(nome == null ? "" : nome).trim().toLowerCase());
+}
+
+/** La conferma di svuotamento giusta per la cartella indicata. */
+export function testoConfermaSvuotamento(nome) {
+  return ePostaEliminata(nome) ? testoConfermaSvuotaPostaEliminata() : testoConfermaSvuotaCartella(nome);
+}
+
+// ---------------------------------------------------------------------------
+// Menu a comparsa (DOM): un livello e sottomenu («Contrassegna»)
+// ---------------------------------------------------------------------------
+
+let menuAperti = [];
+let ancoraRadice = null;
+let chiudiAlClick = null;
+
+function chiudiAlTasto(e) {
+  if (e.key === "Escape") chiudiMenu();
+}
+
+/** Chiude tutti i menu aperti (un livello o più), se ce ne sono. */
+export function chiudiMenu() {
+  for (const m of menuAperti) m.remove();
+  menuAperti = [];
+  ancoraRadice = null;
+  if (chiudiAlClick) {
+    document.removeEventListener("mousedown", chiudiAlClick, true);
+    chiudiAlClick = null;
+  }
+  document.removeEventListener("keydown", chiudiAlTasto, true);
+}
+
+/** Posiziona un menu sotto l'elemento a cui è ancorato, dentro lo schermo. */
+function posiziona(menu, ancora) {
+  const r = ancora && ancora.getBoundingClientRect ? ancora.getBoundingClientRect() : { left: 0, top: 0, bottom: 0 };
+  const mw = menu.offsetWidth;
+  const mh = menu.offsetHeight;
+  const left = Math.max(4, Math.min(r.left, window.innerWidth - mw - 8));
+  let top = r.bottom + 2;
+  if (top + mh > window.innerHeight - 4) top = Math.max(4, (r.top || 0) - mh - 2);
+  menu.style.left = `${left}px`;
+  menu.style.top = `${top}px`;
+}
+
+/**
+ * Crea un livello di menu. `annidato` vero è un sottomenu: non chiude il livello
+ * padre, così «Contrassegna» apre la sua tendina senza far sparire il resto.
+ *
+ * `voci` è un elenco di `{ id, etichetta, ic, attivo, sottomenu }` oppure
+ * `{ sep: true }`. `onScegli(voce)` è chiamato solo al clic su una voce senza
+ * sottomenu. Con `opzioni.campo` si aggiunge in coda una schermata di testo.
+ */
+function creaLivello(ancora, voci, onScegli, opzioni, annidato) {
+  if (!annidato) chiudiMenu();
+  const menu = document.createElement("div");
+  menu.className = "rb-menu" + (annidato ? " rb-menu--sottomenu" : "");
+  menu.setAttribute("role", "menu");
+
+  for (const v of voci) {
+    if (v.sep) {
+      const s = document.createElement("div");
+      s.className = "rb-menu-sep";
+      menu.append(s);
+      continue;
+    }
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "rb-menu-voce" + (v.attivo ? " rb-menu-voce--attivo" : "");
+    b.setAttribute("role", "menuitem");
+    const freccia = Array.isArray(v.sottomenu) ? `<span class="rb-menu-freccia">▸</span>` : "";
+    // Una voce con `colore` (voce «Categorizza») mostra l'icona nel colore
+    // della categoria; negli altri menu l'icona resta neutra.
+    const stileIc = v.colore ? ` style="color: ${fugaHtml(v.colore)}"` : "";
+    b.innerHTML = `<span class="rb-menu-ic"${stileIc}>${v.attivo ? "✓" : fugaHtml(v.ic || "")}</span><span class="rb-menu-lb">${fugaHtml(v.etichetta)}</span>${freccia}`;
+    if (Array.isArray(v.sottomenu)) {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        creaLivello(b, v.sottomenu, onScegli, {}, true);
+      });
+    } else {
+      b.addEventListener("click", () => {
+        chiudiMenu();
+        onScegli(v);
+      });
+    }
+    menu.append(b);
+  }
+
+  if (opzioni.campo) {
+    const riga = document.createElement("div");
+    riga.className = "rb-menu-campo";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.className = "rb-menu-input";
+    input.placeholder = opzioni.campo.placeholder || "";
+    const aggiungi = document.createElement("button");
+    aggiungi.type = "button";
+    aggiungi.className = "rb-menu-aggiungi";
+    aggiungi.textContent = "Aggiungi";
+    const invia = () => {
+      const t = input.value.trim();
+      if (!t) return;
+      chiudiMenu();
+      opzioni.campo.invia(t);
+    };
+    aggiungi.addEventListener("click", invia);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        invia();
+      }
+    });
+    riga.append(input, aggiungi);
+    menu.append(riga);
+  }
+
+  document.body.append(menu);
+  if (!annidato) ancoraRadice = ancora;
+  menuAperti.push(menu);
+  posiziona(menu, ancora);
+
+  if (!chiudiAlClick) {
+    chiudiAlClick = (e) => {
+      const dentro = menuAperti.some((m) => m.contains(e.target));
+      const suAncora = ancoraRadice && ancoraRadice.contains && ancoraRadice.contains(e.target);
+      if (!dentro && !suAncora) chiudiMenu();
+    };
+    document.addEventListener("mousedown", chiudiAlClick, true);
+    document.addEventListener("keydown", chiudiAlTasto, true);
+  }
+  return menu;
+}
+
+/**
+ * Apre un menu ancorato a un elemento (una voce del ribbon, una riga della lista,
+ * una cartella della barra laterale). Un sottomenu si apre dalla voce stessa.
+ */
+export function apriMenu(ancora, voci, onScegli, opzioni = {}) {
+  return creaLivello(ancora, voci, onScegli, opzioni, false);
+}

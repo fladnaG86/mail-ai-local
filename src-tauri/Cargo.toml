@@ -1,0 +1,64 @@
+[package]
+name = "outlook-ai"
+version = "0.1.0"
+license = "MIT"
+description = "Client di posta con assistente IA, interfaccia fedele a Outlook"
+authors = ["Maurizio"]
+edition = "2024"
+
+[lib]
+name = "outlook_ai_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+# Notifiche di sistema (blocco E): plugin ufficiale. Su macOS passa da
+# Notification Center (notify-rust → mac-notification-sys).
+tauri-plugin-notification = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+dirs = "6"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+keyring = { version = "3", features = ["apple-native"] }
+# Posta: IMAP asincrono su runtime tokio, con TLS obbligatorio (nessuna opzione
+# "ignora certificato": `native-tls` valida i certificati di sistema).
+async-trait = "0.1"
+async-imap = { version = "0.12", default-features = false, features = ["runtime-tokio"] }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "net", "io-util", "time", "macros"] }
+tokio-native-tls = "0.3"
+native-tls = "0.2"
+futures = "0.3"
+ammonia = "4.2.3"
+mail-parser = "0.11.9"
+# Allegati in composizione: il contenuto arriva dall'interfaccia in base64 e va
+# decodificato prima di costruire il MIME. Il crate è già presente nell'albero
+# delle dipendenze (usato da lettre), quindi non aggiunge peso reale.
+base64 = "0.22"
+# Invio SMTP: `lettre` con TLS (native-tls) obbligatorio. Le feature predefinite
+# includono `smtp-transport`, `native-tls` e `builder`; non esiste alcuna opzione
+# che disabiliti la verifica dei certificati.
+lettre = "0.11"
+# Assistente IA: client HTTP OpenAI-compatibile (locale e cloud) e impronta
+# SHA-256 delle richieste inviate al cloud (registro di tracciabilità).
+reqwest = { version = "0.12", features = ["json"] }
+sha2 = "0.10"
+x509-parser = "0.18"
+
+[dev-dependencies]
+tempfile = "3"
+# I test del client IA guidano i futuri (`#[tokio::test]`): tokio è già
+# dipendenza normale, qui è reso esplicito per i test di integrazione.
+tokio = { version = "1", features = ["rt", "macros"] }
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

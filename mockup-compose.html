@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Nuovo messaggio — mockup</title>
+<style>
+  html,body{margin:0;padding:0;background:#111;font-family:-apple-system,'Segoe UI',sans-serif;}
+  #w{ --win:#1E1E1E; --chrome:#282828; --text:#E6E6E6; --text2:#B3B3B3; --border:#353535;
+      --border2:#585858; --border3:#515151; --focus:#416D97; --accent:#4BA0FF; --accenttext:#1E1E1E;
+      --aibox:#141414; --aic:#7B83EB; --aidim:#9C9C9C; --eco:#479E46; --sibsel:#454646;
+      width:1496px;height:878px;background:var(--win);color:var(--text);font-size:13px;
+      display:flex;flex-direction:column;overflow:hidden; }
+  #w.light{ --win:#FFFFFF; --chrome:#F5F5F5; --text:#242424; --text2:#605E5C; --border:#D2D0CE;
+      --border2:#C8C6C4; --border3:#D2D0CE; --focus:#0078D7; --accent:#0078D7; --accenttext:#FFFFFF;
+      --aibox:#F3F2F1; --aic:#7B83EB; --aidim:#605E5C; --eco:#107C10; --sibsel:#F3F2F1; }
+  .row{display:flex;align-items:center;}
+  .rb{width:64px;text-align:center;font-size:10px;color:var(--text2);}
+  .rb .ic{font-size:19px;line-height:1;color:var(--text2);}
+  .rb .lb{margin-top:3px;line-height:1.2;}
+  .sep{width:1px;height:60px;background:var(--border2);margin:0 7px;}
+  .fld{height:23px;border:1px solid var(--border);background:var(--win);}
+</style>
+</head>
+<body>
+<div id="w">
+
+  <!-- titolo -->
+  <div class="row" style="height:28px;background:var(--chrome);padding:0 12px;gap:12px;flex:0 0 auto;">
+    <span style="display:inline-flex;gap:8px;">
+      <span style="width:12px;height:12px;border-radius:50%;background:#FF5F57;"></span>
+      <span style="width:12px;height:12px;border-radius:50%;background:#FEBC2E;"></span>
+      <span style="width:12px;height:12px;border-radius:50%;background:#28C840;"></span>
+    </span>
+    <span style="color:var(--text2);font-size:15px;">✉︎　↩　↪　🗄️</span>
+    <span style="flex:1;text-align:center;font-weight:600;">Senza titolo - mario.rossi@esempiogroup.it</span>
+    <span style="color:var(--text2);font-size:15px;">?</span>
+  </div>
+
+  <!-- ribbon -->
+  <div style="background:var(--chrome);border-bottom:1px solid #000;padding:0 16px 8px;flex:0 0 auto;">
+    <div class="row" style="height:26px;gap:22px;font-size:12px;align-items:flex-end;">
+      <span style="border-bottom:2px solid var(--accent);padding-bottom:4px;font-weight:600;">Messaggio</span>
+      <span style="color:var(--text2);padding-bottom:4px;">Opzioni</span>
+    </div>
+    <div class="row" style="gap:2px;margin-top:8px;">
+
+      <div class="rb" style="width:66px;"><div class="ic" style="font-size:22px;">➤</div><div class="lb">Invia</div></div>
+      <div class="rb" style="width:60px;"><div class="ic">📋</div><div class="lb">Incolla</div></div>
+      <div class="sep"></div>
+
+      <!-- carattere -->
+      <div class="row" style="gap:6px;">
+        <span style="border:1px solid var(--border2);border-radius:4px;padding:3px 40px 3px 8px;font-size:12px;">Aptos (Cor…　▾</span>
+        <span style="border:1px solid var(--border2);border-radius:4px;padding:3px 12px;font-size:12px;">12　▾</span>
+      </div>
+      <div class="rb" style="width:34px;"><div class="ic">A⁻</div></div>
+      <div class="rb" style="width:34px;"><div class="ic">A⁺</div></div>
+      <div class="rb" style="width:38px;"><div class="ic">A_A</div></div>
+      <div style="width:1px;height:44px;background:var(--border2);margin:0 7px;"></div>
+      <div class="row" style="gap:10px;font-size:15px;color:var(--text);">
+        <b>G</b><i>S</i><u>S</u><s>abc</s><span>x²</span><span>x₂</span>
+        <span style="background:#FFE94A;color:#000;padding:0 3px;">🖍</span>
+        <span style="color:#C0392B;">A</span>
+      </div>
+      <div style="width:1px;height:44px;background:var(--border2);margin:0 7px;"></div>
+
+      <!-- paragrafo -->
+      <div class="row" style="gap:9px;font-size:15px;color:var(--text2);">
+        <span>≡</span><span>⋮≡</span><span>⇤</span><span>⇥</span><span>¶</span>
+        <span>≡≡</span><span>≡≡</span><span>≡≡</span><span>¶</span>
+      </div>
+      <div class="sep"></div>
+
+      <div class="rb"><div class="ic">☀︎</div><div class="lb">Cambia<br>sfondo</div></div>
+      <div class="rb"><div class="ic">📎</div><div class="lb">Allega<br>file</div></div>
+      <div class="rb" style="width:78px;"><div class="ic">🔗</div><div class="lb">Inserisci<br>collegamento</div></div>
+      <div class="rb" style="width:70px;"><div class="ic">▦</div><div class="lb">Tabella</div></div>
+      <div class="rb" style="width:70px;"><div class="ic">🖼</div><div class="lb">Immagine<br>da file</div></div>
+      <div class="rb"><div class="ic">✍︎</div><div class="lb">Firma</div></div>
+      <div class="rb"><div class="ic">✂︎</div><div class="lb">Ritaglia</div></div>
+      <div class="rb" style="width:66px;"><div class="ic">❗</div><div class="lb">Priorità<br>alta</div></div>
+      <div class="rb" style="width:66px;"><div class="ic">↓</div><div class="lb">Priorità<br>bassa</div></div>
+      <div class="rb" style="width:72px;"><div class="ic">👥</div><div class="lb">Controlla<br>nomi</div></div>
+
+      <div class="sep"></div>
+      <!-- AGGIUNTA: gruppo IA -->
+      <div class="rb" style="width:86px;background:var(--aibox);border:1px solid var(--aic);border-radius:7px;padding:4px 2px;">
+        <div class="ic" style="color:var(--aic);">✦</div>
+        <div class="lb" style="color:var(--text);font-weight:700;">Assistente</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- campi -->
+  <div style="padding:4px 0 0;flex:0 0 auto;">
+    <div class="row" style="height:24px;">
+      <span style="width:78px;text-align:right;padding-right:10px;font-size:12px;">A:</span>
+      <span style="flex:1;height:24px;border:2px solid var(--focus);background:var(--win);margin-right:56px;"></span>
+      <span style="width:46px;text-align:center;color:var(--text2);">👤</span>
+    </div>
+    <div class="row" style="height:22px;">
+      <span style="width:78px;text-align:right;padding-right:10px;font-size:12px;">Cc:</span>
+      <span style="flex:1;height:22px;border:1px solid var(--border);margin-right:56px;"></span>
+      <span style="width:46px;text-align:center;color:var(--text2);">👤</span>
+    </div>
+    <div class="row" style="height:22px;margin-top:4px;">
+      <span style="width:78px;text-align:right;padding-right:10px;font-size:12px;">Oggetto:</span>
+      <span style="flex:1;height:22px;border:1px solid var(--border);margin-right:4px;"></span>
+    </div>
+  </div>
+
+  <!-- AGGIUNTA: barra di controllo pre-invio -->
+  <div class="row" style="margin:8px 4px 0 78px;gap:8px;padding:6px 10px;background:var(--aibox);border:1px solid var(--aic);border-radius:6px;flex:0 0 auto;">
+    <span style="color:var(--aic);font-size:14px;">✦</span>
+    <span style="font-size:12px;font-weight:600;">Controllo prima dell'invio</span>
+    <span style="font-size:11px;color:var(--aidim);">allegati citati nel testo · destinatari giusti · tono · dati sensibili</span>
+    <span style="margin-left:auto;font-size:11px;color:var(--aidim);">⚙</span>
+  </div>
+
+  <!-- corpo -->
+  <div style="flex:1;border-top:1px solid var(--border3);margin-top:8px;padding:16px 24px;overflow:hidden;">
+    <div style="font-size:13px;line-height:1.6;">
+      Buongiorno,<br><br>come concordato preparo il piano di manutenzione per il fermo impianto di dicembre.<br><br>
+    </div>
+
+    <!-- firma come nel riferimento -->
+    <div style="display:flex;gap:10px;margin-top:28px;">
+      <div style="width:112px;height:150px;border:1px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+        <span style="font-size:20px;font-weight:800;letter-spacing:1px;color:#C0392B;">OIKOS</span>
+        <span style="font-size:9px;color:var(--text2);text-align:center;">Via Bianchi 2<br>96010 Priolo G (SR)<br>CONSULENZA ALLE IMPRESE ED<br>ELABORAZIONE DATI</span>
+      </div>
+      <div style="width:280px;height:150px;border:1px solid var(--border2);padding:14px 16px;font-size:12px;">
+        <div style="font-weight:600;font-size:13px;">Mario Rossi</div>
+        <div style="color:var(--text2);">System Administrator</div>
+        <div style="color:#4BA0FF;text-decoration:underline;font-size:11px;">mario.rossi@esempiogroup.it</div>
+        <div style="border-top:1px solid var(--border2);margin-top:34px;padding-top:10px;">tel: +39 0931.477711</div>
+      </div>
+    </div>
+
+    <div style="margin-top:14px;color:var(--eco);font-size:10px;">Rispetta l'ambiente. Non stampare questa mail se non è necessario.</div>
+  </div>
+</div>
+<script>if (location.hash.indexOf("light")>=0) document.getElementById("w").classList.add("light");</script>
+</body>
+</html>

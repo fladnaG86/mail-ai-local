@@ -1,0 +1,75 @@
+/* outlook-ai-clone — design token misurati sull'app reale
+   SCURO: misurato sullo screenshot 1 (upload_..._1.png, tema scuro)
+   CHIARO: misurato sullo screenshot 2 (upload_..._2.png, tema chiaro)
+   Geometria identica nei due temi: finestra 1728x988pt, sidebar 234pt,
+   titolo 28pt + ribbon 108pt, intestazione colonne 23pt, riga messaggio 27pt,
+   barra info 20pt, barra di stato 26pt. */
+
+:root[data-theme="dark"] {
+  /* superfici */
+  --window-bg:        #1E1E1E;
+  --chrome-bg:        #282828;   /* barra titolo, ribbon, barra di stato */
+  --pane-bg:          #FFFFFF00; /* sidebar, lista, lettura = window-bg */
+  --sidebar-sel-bg:   #454646;
+  --sidebar-sep:      #545454;
+  --list-header-bg:   #303132;
+  --list-header-sep:  #090909;
+  --row-sep:          #464646;
+  --row-sel-bg:       #00307E;   /* MessageListSelectedBackgroundColor (era #102F79, a occhio) */
+  --row-hover-bg:     #2E2E2E;
+  --group-row-bg:     #2B2B2B;
+  --info-bar-bg:      #323232;
+  --pane-sep:         #545454;   /* separatore lista / pannello lettura */
+  /* testo */
+  --text-primary:     #E6E6E6;
+  --text-secondary:   #B3B3B3;
+  --text-placeholder: #919191;
+  --text-on-select:   #FFFFFF;
+  /* accenti */
+  --accent:           #4BA0FF;   /* BlueButtonPrimaryBackgroundDefaultColor */
+  --accent-hover:     #0085F0;
+  --accent-pressed:   #004E8A;
+  --accent-disabled:  #3E6998;
+  --accent-text:      #1E1E1E;   /* BlueButtonTextColor */
+  /* IA */
+  --ai-panel-bg:      #141414;   /* CopilotBannerBackgroundColor */
+  --ai-accent:        #7B83EB;   /* CopilotGradientEnd */
+  --ai-text:          #FFFFFF;
+  --ai-text-dim:      #9C9C9C;   /* CopilotSubheadingColor */
+}
+
+:root[data-theme="light"] {
+  /* superfici */
+  --window-bg:        #FFFFFF;
+  --chrome-bg:        #F5F5F5;
+  --sidebar-sel-bg:   #F3F2F1;   /* selez. cartella */
+  --sidebar-sep:      #E1DFDD;
+  --list-header-bg:   #F3F3F3;
+  --list-header-sep:  #DDDDDD;
+  --row-sep:          #F3F2F1;
+  --row-sel-bg:       #DDECF8;   /* MessageListSelectedBackgroundColor (era #E0EBF7, a occhio) */
+  --row-hover-bg:     #F3F2F1;
+  --group-row-bg:     #FAF9F8;
+  --info-bar-bg:      #E9EEF3;
+  --pane-sep:         #D8DBE2;
+  /* testo */
+  --text-primary:     #242424;
+  --text-secondary:   #605E5C;
+  --text-placeholder: #8E8E93;
+  --text-on-select:   #242424;   /* in chiaro il testo resta scuro anche selezionato */
+  /* accenti */
+  --accent:           #0078D4;   /* BlueButtonPrimaryBackgroundDefaultColor */
+  --accent-hover:     #106EBE;
+  --accent-pressed:   #005A9E;
+  --accent-disabled:  #A6C8E8;
+  --accent-text:      #FFFFFF;
+  /* icone ribbon in chiaro: tinte Office (misurate) */
+  --icon-blue-1:      #2961AB;
+  --icon-blue-2:      #4389C8;
+  --icon-blue-3:      #90BCE8;
+  /* IA */
+  --ai-panel-bg:      #F3F2F1;
+  --ai-accent:        #7B83EB;
+  --ai-text:          #242424;
+  --ai-text-dim:      #605E5C;
+}

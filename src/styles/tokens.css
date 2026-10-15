@@ -1,0 +1,105 @@
+/* Token di design — estesi da design-tokens.css (provenienza di ogni valore nel commento).
+   SCURO: misurato sugli screenshot dell'app di riferimento.
+   CHIARO: misurato sul secondo screenshot.
+   A: presente in Assets.car dell'app di riferimento · D: dedotto. */
+
+:root, :root[data-theme="dark"] {
+  --window-bg:        #1E1E1E;   /* M */
+  --chrome-bg:        #282828;   /* M — barra titolo, ribbon, barra di stato */
+  --sidebar-sel-bg:   #454646;   /* M */
+  --sidebar-sep:      #545454;   /* M */
+  --list-header-bg:   #303132;   /* M */
+  --list-header-sep:  #090909;   /* M */
+  --row-sep:          #464646;   /* M */
+  --row-sel-bg:       #102F79;   /* M (≈ #00307E A) */
+  --row-hover-bg:     #2E2E2E;   /* A */
+  --row-flagged-bg:   #464646;   /* A — MessageListFlaggedBackgroundColor (scuro) */
+  --group-row-bg:     #2B2B2B;   /* M */
+  --info-bar-bg:      #323232;   /* M */
+  --pane-sep:         #545454;   /* M — separatore lista / pannello lettura */
+  --btn-border:       #464646;   /* M */
+  --campo-bordo:      #353535;   /* M — bordo dei campi nella finestra di composizione */
+  --campo-focus:      #416D97;   /* M — anello di fuoco sul campo attivo */
+
+  --text-primary:     #E6E6E6;   /* M */
+  --text-secondary:   #B3B3B3;   /* M */
+  --text-placeholder: #919191;   /* A */
+  --text-on-select:   #FFFFFF;   /* M */
+
+  --accent:           #4BA0FF;   /* M */
+  --accent-hover:     #0085F0;   /* A */
+  --accent-pressed:   #004E8A;   /* A */
+  --accent-disabled:  #3E6998;   /* A */
+  --accent-text:      #1E1E1E;   /* A (BlueButtonTextColor) */
+
+  --ai-panel-bg:      #141414;   /* A (CopilotBannerBackgroundColor) */
+  --ai-accent:        #7B83EB;   /* A (CopilotGradientEnd) */
+  --ai-text:          #FFFFFF;   /* A */
+  --ai-text-dim:      #9C9C9C;   /* A (CopilotSubheadingColor) */
+}
+
+:root[data-theme="light"] {
+  --window-bg:        #FFFFFF;   /* M */
+  --chrome-bg:        #F5F5F5;   /* M */
+  --sidebar-sel-bg:   #F3F2F1;   /* M */
+  --sidebar-sep:      #E1DFDD;   /* M */
+  --list-header-bg:   #F3F3F3;   /* M */
+  --list-header-sep:  #DDDDDD;   /* M */
+  --row-sep:          #F3F2F1;   /* M */
+  --row-sel-bg:       #E0EBF7;   /* M */
+  --row-hover-bg:     #F3F2F1;   /* M */
+  --row-flagged-bg:   #FFFFCC;   /* A — MessageListFlaggedBackgroundColor (chiaro) */
+  --group-row-bg:     #FAF9F8;   /* M */
+  --info-bar-bg:      #E9EEF3;   /* M */
+  --pane-sep:         #D8DBE2;   /* M */
+  --btn-border:       #D2D0CE;   /* A */
+  --campo-bordo:      #C8C6C4;   /* A — il tema chiaro della composizione non è stato misurato */
+  --campo-focus:      #0078D7;   /* D */
+
+  --text-primary:     #242424;   /* M */
+  --text-secondary:   #605E5C;   /* M */
+  --text-placeholder: #8E8E93;   /* M */
+  --text-on-select:   #242424;   /* M — in chiaro il testo resta scuro anche selezionato */
+
+  --accent:           #0078D7;   /* D */
+  --accent-hover:     #106EBE;   /* A */
+  --accent-pressed:   #005A9E;   /* A */
+  --accent-disabled:  #A6C8E8;   /* D */
+  --accent-text:      #FFFFFF;   /* M */
+
+  --ai-panel-bg:      #F3F2F1;   /* A */
+  --ai-accent:        #7B83EB;   /* A */
+  --ai-text:          #242424;   /* M */
+  --ai-text-dim:      #605E5C;   /* M */
+}
+
+/* Tinte delle categorie di Outlook (blocco O) — identiche nei due temi, come nel
+   client, che colora la stessa tinta in chiaro e in scuro. Sono i valori dei
+   preset categoria di Outlook (`Preset0/1/3/4/7/8`; Microsoft Learn,
+   `Office.MailboxEnums.CategoryColor`). Dove l'app installata li porta con sé il
+   valore coincide con quello misurato in `docs/riferimento-outlook/colori-misurati.md`:
+   il rosso è `CalendarThemeHeaderColorRed` (#D13438), il blu è `GroupCardBlueColor`
+   (#0078D4). Gli id (usati in config.json) sono nel commento. */
+:root {
+  --cat-rosso:      #D13438;   /* id: rosso */
+  --cat-arancione:  #F7630C;   /* id: arancione */
+  --cat-giallo:     #FFB900;   /* id: giallo */
+  --cat-verde:      #107C10;   /* id: verde */
+  --cat-blu:        #0078D4;   /* id: blu */
+  --cat-viola:      #8764B8;   /* id: viola */
+}
+
+/* Geometria misurata sul riferimento (punti) — identica nei due temi */
+:root {
+  /* Scala del testo dell'interfaccia (blocco P): numero puro, default 1.
+     La imposta il pannello «Accessibilità»; `app.css` la usa con `zoom` su #app. */
+  --ui-scala-testo:   1;
+  --h-titlebar:       28px;
+  --h-ribbon:        108px;
+  --w-sidebar:       234px;
+  --h-list-head:      23px;
+  --h-row:            27px;
+  --h-group-row:      22px;
+  --h-info-bar:       20px;
+  --h-statusbar:      26px;
+}

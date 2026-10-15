@@ -1,0 +1,36 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.superpowers/
+.rif-outlook/
+
+# schermate di verifica dell'agente (riproducibili, non fanno parte del progetto)
+mio-*.png
+
+# Schermate dell'app alla radice: materiale di lavoro, non parte del progetto.
+# Erano state prese con i dati d'esempio di allora, che contenevano nomi e
+# domini reali; non si possono ripulire con una sostituzione di testo, perché
+# sono immagini. Restano sul disco, fuori dal repository.
+/*.png

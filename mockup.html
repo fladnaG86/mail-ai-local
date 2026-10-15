@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Outlook + Assistente — mockup</title>
+<style>
+  html,body{margin:0;padding:0;background:#111;font-family:-apple-system,'Segoe UI',sans-serif;}
+  #win{ --win:#1E1E1E; --chrome:#282828; --sibsel:#454646; --sibsep:#545454; --header:#303132;
+        --headsep:#090909; --rowsep:#464646; --rowsel:#102F79; --group:#2B2B2B; --info:#323232;
+        --panesep:#545454; --text:#E6E6E6; --text2:#B3B3B3; --onsel:#FFFFFF; --accent:#4BA0FF;
+        --accenttext:#1E1E1E; --aibox:#141414; --aic:#7B83EB; --aidim:#9C9C9C; --border:#3D3D3D;
+        --btnborder:#464646; width:1728px; height:988px; background:var(--win); color:var(--text);
+        font-size:13px; display:flex; flex-direction:column; overflow:hidden; }
+  #win.light{ --win:#FFFFFF; --chrome:#F5F5F5; --sibsel:#F3F2F1; --sibsep:#E1DFDD; --header:#F3F3F3;
+        --headsep:#DDDDDD; --rowsep:#F3F2F1; --rowsel:#E0EBF7; --group:#FAF9F8; --info:#E9EEF3;
+        --panesep:#D8DBE2; --text:#242424; --text2:#605E5C; --onsel:#242424; --accent:#0078D7;
+        --accenttext:#FFFFFF; --aibox:#F3F2F1; --aic:#7B83EB; --aidim:#605E5C; --border:#C8C6C4;
+        --btnborder:#D2D0CE; }
+  .row{display:flex;align-items:center;}
+  .ribbtn{width:74px;text-align:center;color:var(--text);}
+  .ribbtn .ic{font-size:20px;line-height:1;color:var(--text2);}
+  .ribbtn .lb{font-size:10px;color:var(--text2);margin-top:4px;line-height:1.25;}
+  .sep{width:1px;height:62px;background:var(--btnborder);margin:0 8px;}
+  .folder{padding:4px 12px;font-size:12px;}
+</style>
+</head>
+<body>
+<div id="win">
+
+  <!-- barra del titolo -->
+  <div class="row" style="height:28px;background:var(--chrome);padding:0 12px;gap:12px;flex:0 0 auto;">
+    <span style="display:inline-flex;gap:8px;">
+      <span style="width:12px;height:12px;border-radius:50%;background:#FF5F57;"></span>
+      <span style="width:12px;height:12px;border-radius:50%;background:#FEBC2E;"></span>
+      <span style="width:12px;height:12px;border-radius:50%;background:#28C840;"></span>
+    </span>
+    <span style="color:var(--text2);font-size:15px;">✉︎　↩　↪　🗄️</span>
+    <span style="flex:1;text-align:center;font-weight:600;font-size:13px;">Posta in arrivo</span>
+    <span style="color:var(--text2);font-size:12px;">Legacy Outlook</span>
+    <span style="width:34px;height:16px;border-radius:9px;background:#4BA0FF;position:relative;">
+      <span style="position:absolute;right:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#fff;"></span>
+    </span>
+    <span style="background:var(--sibsel);border:1px solid var(--btnborder);border-radius:6px;padding:3px 60px 3px 10px;color:var(--text2);font-size:12px;">🔍 Cerca</span>
+    <span style="color:var(--text2);font-size:15px;">?</span>
+  </div>
+
+  <!-- ribbon -->
+  <div style="background:var(--chrome);border-bottom:1px solid var(--border);padding:0 16px 8px;flex:0 0 auto;">
+    <div class="row" style="height:26px;gap:22px;font-size:12px;align-items:flex-end;">
+      <span style="border-bottom:2px solid var(--accent);padding-bottom:4px;font-weight:600;">Home</span>
+      <span style="color:var(--text2);padding-bottom:4px;">Organizza</span>
+      <span style="color:var(--text2);padding-bottom:4px;">Strumenti</span>
+    </div>
+    <div class="row" style="gap:2px;margin-top:8px;">
+      <div class="ribbtn"><div class="ic">✉︎</div><div class="lb">Nuovo messaggio<br>di posta elettronica</div></div>
+      <div class="ribbtn"><div class="ic">📅</div><div class="lb">Nuovi<br>elementi</div></div>
+      <div class="sep"></div>
+      <div class="ribbtn"><div class="ic">🗑</div><div class="lb">Elimina</div></div>
+      <div class="ribbtn"><div class="ic">🗄</div><div class="lb">Archivia</div></div>
+      <div class="sep"></div>
+      <div class="ribbtn"><div class="ic">↩</div><div class="lb">Rispondi</div></div>
+      <div class="ribbtn"><div class="ic">↩↩</div><div class="lb">Rispondi<br>a tutti</div></div>
+      <div class="ribbtn"><div class="ic">↪</div><div class="lb">Inoltra</div></div>
+      <div class="ribbtn"><div class="ic">📆</div><div class="lb">Riunione</div></div>
+      <div class="ribbtn"><div class="ic">📎</div><div class="lb">Allegato</div></div>
+      <div class="sep"></div>
+      <div class="ribbtn"><div class="ic">☀︎</div><div class="lb">Cambia<br>sfondo</div></div>
+      <div class="ribbtn"><div class="ic">↦</div><div class="lb">Sposta</div></div>
+      <div class="ribbtn"><div class="ic">🚫</div><div class="lb">Indesiderato</div></div>
+      <div class="ribbtn"><div class="ic">⚙</div><div class="lb">Regole</div></div>
+      <div class="sep"></div>
+      <div class="ribbtn"><div class="ic">✉︎</div><div class="lb">Letto/Da<br>leggere</div></div>
+      <div class="ribbtn"><div class="ic">🏷</div><div class="lb">Categorizza</div></div>
+      <div class="ribbtn"><div class="ic">✔︎</div><div class="lb">Completa</div></div>
+      <div class="ribbtn" style="width:80px;"><div class="ic">▽</div><div class="lb">Filtra posta<br>elettronica</div></div>
+      <div class="sep"></div>
+      <div class="ribbtn"><div class="ic">👤</div><div class="lb">Trova<br>contatto</div></div>
+      <div class="ribbtn"><div class="ic">📖</div><div class="lb">Rubrica</div></div>
+      <div class="ribbtn"><div class="ic">↻</div><div class="lb">Invia e<br>ricevi</div></div>
+      <div class="sep"></div>
+      <div class="ribbtn" style="width:86px;background:var(--aibox);border:1px solid var(--aic);border-radius:7px;padding:4px 2px;">
+        <div class="ic" style="color:var(--aic);">✦</div><div class="lb" style="color:var(--text);font-weight:700;">Assistente</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- corpo -->
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <!-- sidebar -->
+    <div style="width:234px;background:var(--win);border-right:1px solid var(--sibsep);padding:6px 0;overflow:hidden;flex:0 0 auto;">
+      <div class="folder">▸　Tutti gli account</div>
+      <div class="folder">▾　mario.rossi@esempiogroup.it</div>
+      <div class="folder" style="padding-left:26px;background:var(--sibsel);font-weight:600;">📥 Posta in arrivo</div>
+      <div class="folder" style="padding-left:26px;border-top:1px solid var(--sibsep);">📝 Bozze</div>
+      <div class="folder" style="padding-left:26px;border-top:1px solid var(--sibsep);">📤 Posta inviata</div>
+      <div class="folder" style="padding-left:26px;border-top:1px solid var(--sibsep);">🗑 Posta eliminata <span style="float:right;color:var(--text2);">2</span></div>
+      <div class="folder" style="border-top:1px solid var(--sibsep);">▾　📥 Posta in arrivo</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">Bozze</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">Archivio</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">Posta inviata</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">Posta eliminata <span style="float:right;color:var(--text2);">41</span></div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">Posta indesiderata</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">Archivio</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">cose da fare</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">importazione fatture <span style="float:right;color:var(--text2);">3</span></div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">PBX centralino</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">Templates</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">Timbrature <span style="float:right;color:var(--text2);">10621</span></div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);border-top:1px solid var(--sibsep);">Veeam Backup <span style="float:right;color:var(--text2);">2857</span></div>
+      <div class="folder" style="margin-top:8px;border-top:1px solid var(--sibsep);padding-top:8px;">▾　Cartelle smart</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);">Messaggio alta priorità</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);">Messaggio contrassegnato</div>
+      <div class="folder" style="padding-left:26px;color:var(--text2);">Messaggio scaduto</div>
+      <div class="folder" style="margin-top:8px;border-top:1px solid var(--sibsep);padding-top:8px;">▸　Sul mio computer</div>
+    </div>
+
+    <!-- lista + lettura -->
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+
+      <div class="row" style="height:23px;background:var(--header);border-bottom:1px solid var(--headsep);font-size:11px;color:var(--text2);padding:0 4px;flex:0 0 auto;">
+        <span style="width:30px;">⚑</span><span style="width:340px;">Mittente　▾</span><span style="flex:1;">Oggetto　▾</span>
+        <span style="width:210px;">Data ricezione　▾</span><span style="width:130px;">Categoria　▾</span><span style="width:46px;text-align:right;">⚑　▤</span>
+      </div>
+
+      <div style="flex:0 0 auto;background:var(--win);font-size:12px;">
+        <div class="row" style="height:22px;background:var(--group);color:var(--text2);font-size:11px;padding-left:10px;">Oggi</div>
+        <div class="row" style="height:27px;background:var(--rowsel);color:var(--onsel);border-bottom:1px solid var(--rowsep);">
+          <span style="width:30px;text-align:center;">▣</span><span style="width:340px;">Fabio Santonceto</span><span style="flex:1;">mail per Gigliuto</span>
+          <span style="width:210px;">lun 12/10/26, 17:26</span><span style="width:130px;"></span><span style="width:46px;text-align:center;">⚑</span>
+        </div>
+        <div class="row" style="height:27px;border-bottom:1px solid var(--rowsep);">
+          <span style="width:30px;text-align:center;">○</span><span style="width:340px;">BETA - Industrial Services</span><span style="flex:1;">Nuovo dato inserito nel form contatti del sito</span>
+          <span style="width:210px;color:var(--text2);">lun 12/10/26, 16:37</span><span style="width:130px;"></span><span style="width:46px;"></span>
+        </div>
+        <div class="row" style="height:27px;border-bottom:1px solid var(--rowsep);">
+          <span style="width:30px;text-align:center;">○</span><span style="width:340px;">marco.ferrari@esempiogroup.it</span><span style="flex:1;">I: Prenotazione ritiro AMAZON DHL</span>
+          <span style="width:210px;color:var(--text2);">lun 12/10/26, 16:20</span><span style="width:130px;"></span><span style="width:46px;"></span>
+        </div>
+        <div class="row" style="height:27px;border-bottom:1px solid var(--rowsep);">
+          <span style="width:30px;text-align:center;">○</span><span style="width:340px;">NOREPLY@DHL.COM</span><span style="flex:1;">Prenotazione ritiro AMAZON DHL</span>
+          <span style="width:210px;color:var(--text2);">lun 12/10/26, 16:06</span><span style="width:130px;"></span><span style="width:46px;"></span>
+        </div>
+        <div class="row" style="height:27px;border-bottom:1px solid var(--rowsep);">
+          <span style="width:30px;text-align:center;">○</span><span style="width:340px;">comunicazioni@staff.esempiohost.it</span><span style="flex:1;">Accessi eseguiti da un nuovo dispositivo all'account v*d@pec.example…</span>
+          <span style="width:210px;color:var(--text2);">lun 12/10/26, 16:04</span><span style="width:130px;"></span><span style="width:46px;"></span>
+        </div>
+        <div class="row" style="height:27px;border-bottom:1px solid var(--rowsep);">
+          <span style="width:30px;text-align:center;">○</span><span style="width:340px;">comunicazioni@staff.esempiohost.it</span><span style="flex:1;">mago.esempiogroup.it verrà migrato sul nuovo servizio Terzo livello…</span>
+          <span style="width:210px;color:var(--text2);">lun 12/10/26, 15:30</span><span style="width:130px;"></span><span style="width:46px;"></span>
+        </div>
+        <div class="row" style="height:27px;border-bottom:1px solid var(--rowsep);">
+          <span style="width:30px;text-align:center;">○</span><span style="width:340px;">comunicazioni@staff.esempiohost.it</span><span style="flex:1;">portale.esempiogroup.it verrà migrato sul nuovo servizio Terzo livello…</span>
+          <span style="width:210px;color:var(--text2);">lun 12/10/26, 15:30</span><span style="width:130px;"></span><span style="width:46px;"></span>
+        </div>
+      </div>
+
+      <div style="height:1px;background:var(--panesep);flex:0 0 auto;"></div>
+
+      <!-- pannello di lettura -->
+      <div style="flex:1;background:var(--win);display:flex;flex-direction:column;min-height:0;">
+
+        <!-- AGGIUNTA: barra IA -->
+        <div class="row" style="height:30px;gap:8px;padding:0 14px;border-bottom:1px solid var(--rowsep);flex:0 0 auto;">
+          <span style="font-size:11px;color:var(--text2);margin-right:2px;">Assistente:</span>
+          <span style="background:var(--accent);color:var(--accenttext);font-weight:700;padding:4px 12px;border-radius:6px;font-size:12px;">✦ Riassumi</span>
+          <span style="border:1px solid var(--accent);color:var(--accent);padding:3px 11px;border-radius:6px;font-size:12px;">✦ Rispondi</span>
+          <span style="border:1px solid var(--btnborder);padding:3px 11px;border-radius:6px;font-size:12px;">✦ Estrai azioni</span>
+          <span style="border:1px solid var(--btnborder);padding:3px 11px;border-radius:6px;font-size:12px;">✦ Traduci</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--text2);">modello: <span style="color:var(--text);">locale · thinkingcap-27b</span> ▾</span>
+        </div>
+
+        <div style="padding:10px 16px 2px;font-size:22px;font-weight:700;flex:0 0 auto;">mail per Gigliuto</div>
+        <div class="row" style="gap:10px;padding:4px 16px 10px;flex:0 0 auto;">
+          <span style="width:28px;height:28px;border-radius:50%;background:#D2691E;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;">FS</span>
+          <span><b>Fabio Santonceto</b> <span style="color:var(--text2);">&lt;fabio.santonceto@beta.it&gt;</span><br>
+          <span style="color:var(--text2);font-size:11px;">A: 'Mario Rossi'</span></span>
+          <span style="margin-left:auto;color:var(--text2);font-size:12px;">Oggi alle 17:26　☼</span>
+        </div>
+
+        <div class="row" style="height:22px;background:var(--info);padding:0 16px;font-size:11px;flex:0 0 auto;">⚑　Messaggio contrassegnato per il completamento.</div>
+
+        <!-- scheda IA -->
+        <div style="margin:10px 16px 4px;background:var(--aibox);border-left:3px solid var(--aic);border-radius:6px;padding:9px 12px;flex:0 0 auto;">
+          <div style="font-weight:700;font-size:11px;">RIASSUNTO · 3 messaggi</div>
+          <div style="color:var(--aidim);margin-top:4px;">Fabio segnala l'arrivo di Riccardo Gigliuto in Beta. Nessuna azione richiesta.</div>
+          <div style="color:var(--aidim);font-size:10px;margin-top:4px;opacity:.85;">elaborato in locale · nessun dato inviato fuori</div>
+        </div>
+
+        <div style="padding:6px 16px;font-size:13px;line-height:1.6;">
+          Mario,<br>il collega si chiama Riccardo Gigliuto<br>è arrivato in beta qualche mese fa.<br><br>Saluti<br><br>
+          <span style="font-style:italic;font-weight:600;">Fabio Santonceto</span><br>
+          <span style="color:var(--text2);font-size:12px;">Beta Srl · Ufficio Tecnico · Via Bianchi 12 · 96010 Priolo G (SR)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- barra di stato -->
+  <div class="row" style="height:26px;background:var(--chrome);border-top:1px solid var(--border);padding:0 16px;font-size:11px;color:var(--text2);flex:0 0 auto;">
+    <span>Elementi: 19492</span>
+    <span style="margin-left:auto;">Tutte le cartelle sono aggiornate.　　　Connesso a: mario.rossi@esempiogroup.it</span>
+  </div>
+</div>
+<script>
+  if (location.hash.indexOf("light") >= 0) document.getElementById("win").classList.add("light");
+</script>
+</body>
+</html>

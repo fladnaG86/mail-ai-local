@@ -1,0 +1,15 @@
+{
+  "name": "mail-ai-local",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "jsdom": "^30.1.3"
+  },
+  "license": "MIT",
+  "description": "Client di posta per macOS con assistente IA locale, interfaccia ispirata a Outlook"
+}
