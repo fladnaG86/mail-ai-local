@@ -171,6 +171,7 @@ export function impostazioniDiEsempio() {
       // automatica, Ortografia (stessi default del kernel).
       letturaPannello: "sotto",
       letturaSegnaLettoDopo: 0,
+      letturaSegnaLettoAlPassaggio: true,
       letturaImmagini: "chiedi",
       letturaAnteprima: false,
       composizioneFormato: "html",

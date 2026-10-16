@@ -659,6 +659,9 @@ pub struct Preferenze {
     pub lettura_pannello: String,
     /// Segna come letto dopo N secondi dall'apertura (0 = mai).
     pub lettura_segna_letto_dopo: i64,
+    /// Segna come letto un messaggio dopo che il mouse è rimasto 1 secondo sulla
+    /// sua riga nella lista (attivo di default).
+    pub lettura_segna_letto_al_passaggio: bool,
     /// Politica delle immagini: "mai" | "chiedi" | "sempre".
     pub lettura_immagini: String,
     /// Mostra l'anteprima del testo nella lista (spento di default).
@@ -805,6 +808,7 @@ impl Default for Preferenze {
             comando_avvio_locale: COMANDO_AVVIO_LOCALE_DEFAULT.to_string(),
             lettura_pannello: LETTURA_PANNELLO_DEFAULT.to_string(),
             lettura_segna_letto_dopo: 0,
+            lettura_segna_letto_al_passaggio: true,
             lettura_immagini: LETTURA_IMMAGINI_DEFAULT.to_string(),
             lettura_anteprima: false,
             lettura_zoom: LETTURA_ZOOM_DEFAULT,

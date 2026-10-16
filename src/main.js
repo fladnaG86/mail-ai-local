@@ -657,8 +657,55 @@ function prefLettura() {
     pannello: normPannello(p.letturaPannello),
     immagini: normImmagini(p.letturaImmagini),
     secondi: secondiSegnaLetto(p.letturaSegnaLettoDopo),
+    alPassaggio: p.letturaSegnaLettoAlPassaggio !== false,
     anteprima: !!p.letturaAnteprima,
   };
+}
+
+/**
+ * Chiede al kernel di segnare `messaggio` come letto. Vero se è andata (nel
+ * browser, dove non c'è kernel, sempre vero: l'effetto è solo in memoria).
+ */
+async function segnaLettoNelKernel(messaggio) {
+  if (!dentroTauri() || !messaggio.uid) return true;
+  const accountId = accountIdPerAzione(messaggio);
+  if (accountId === undefined) return false;
+  const errore = await azioneMail("mail_set_seen", {
+    folder: cartellaDi(messaggio),
+    uid: messaggio.uid,
+    letto: true,
+    accountId,
+  });
+  return !errore;
+}
+
+/** Quanto il mouse deve restare sulla riga perché il messaggio risulti letto. */
+const PASSAGGIO_SEGNA_LETTO_MS = 1000;
+let timerPassaggio = null;
+
+function annullaSegnaLettoAlPassaggio() {
+  if (timerPassaggio) {
+    clearTimeout(timerPassaggio);
+    timerPassaggio = null;
+  }
+}
+
+/**
+ * Il mouse è entrato nella riga di `messaggio`: se resta 1 secondo e il
+ * messaggio non è letto, lo segna come letto (preferenza «al passaggio»). Un
+ * solo timer alla volta: cambiare riga riparte da zero.
+ */
+function programmaSegnaLettoAlPassaggio(messaggio) {
+  annullaSegnaLettoAlPassaggio();
+  if (!prefLettura().alPassaggio || !messaggio || messaggio.seen) return;
+  timerPassaggio = setTimeout(async () => {
+    timerPassaggio = null;
+    if (!(await segnaLettoNelKernel(messaggio))) return;
+    messaggio.seen = true;
+    ridisegna();
+    if (readingEl && messaggioCorrente === messaggio) renderLettura(readingEl, messaggio);
+    stato("Messaggio segnato come letto.");
+  }, PASSAGGIO_SEGNA_LETTO_MS);
 }
 
 /**
@@ -675,17 +722,7 @@ function programmaSegnaLetto(messaggio) {
   if (!secondi || !messaggio || messaggio.seen) return;
   timerSegnaLetto = setTimeout(async () => {
     timerSegnaLetto = null;
-    if (dentroTauri() && messaggio.uid) {
-      const accountId = accountIdPerAzione(messaggio);
-      if (accountId === undefined) return;
-      const errore = await azioneMail("mail_set_seen", {
-        folder: cartellaDi(messaggio),
-        uid: messaggio.uid,
-        letto: true,
-        accountId,
-      });
-      if (errore) return;
-    }
+    if (!(await segnaLettoNelKernel(messaggio))) return;
     messaggio.seen = true;
     if (messaggioCorrente === messaggio) {
       ridisegna();
@@ -3771,6 +3808,10 @@ export async function boot() {
     if (e.detail) e.detail.selected = true;
     apriMessaggio(readingEl, e.detail);
   });
+
+  // Il mouse resta su una riga non letta: dopo 1 secondo risulta letta.
+  listEl.addEventListener("message-hover", (e) => programmaSegnaLettoAlPassaggio(e.detail));
+  listEl.addEventListener("message-hover-end", annullaSegnaLettoAlPassaggio);
 
   // Blocco I1: clic destro su un messaggio o su una conversazione della lista.
   listEl.addEventListener("contextmenu-messaggio", (e) => {

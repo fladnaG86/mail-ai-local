@@ -281,6 +281,7 @@ export function renderListaConversazioni(root, conversazioni = [], opzioni = {})
         riga.classList.add("row--sel");
         root.dispatchEvent(new CustomEvent("message-selected", { detail: m, bubbles: true }));
       });
+      collegaPassaggio(riga, root, m);
       riga.addEventListener("contextmenu", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -509,6 +510,19 @@ export function renderSidebar(root, folders = sampleFolders) {
 }
 
 /**
+ * Avvisa la lista quando il mouse entra o esce dalla riga di un messaggio: chi
+ * ascolta (`main.js`) decide se e quando segnarlo come letto.
+ */
+function collegaPassaggio(riga, root, messaggio) {
+  riga.addEventListener("mouseenter", () =>
+    root.dispatchEvent(new CustomEvent("message-hover", { detail: messaggio, bubbles: true })),
+  );
+  riga.addEventListener("mouseleave", () =>
+    root.dispatchEvent(new CustomEvent("message-hover-end", { bubbles: true })),
+  );
+}
+
+/**
  * Disegna la lista con le righe di gruppo ("Oggi" / "Ieri" / "Questa settimana").
  * Accetta sia i messaggi di esempio del browser sia le righe della cache.
  *
@@ -551,6 +565,7 @@ export function renderList(root, messages = sampleMessages, opzioni = {}) {
       row.classList.add("row--sel");
       root.dispatchEvent(new CustomEvent("message-selected", { detail: m, bubbles: true }));
     });
+    collegaPassaggio(row, root, m);
     // Clic destro: menu contestuale del messaggio (blocco I1).
     row.addEventListener("contextmenu", (e) => {
       e.preventDefault();

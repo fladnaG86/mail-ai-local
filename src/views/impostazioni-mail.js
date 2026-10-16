@@ -178,6 +178,7 @@ function corpoPannello(chiave, p) {
         <label><input type="radio" name="lettura-pannello" value="nascosto"${p.letturaPannello === "nascosto" ? " checked" : ""}> Nascosto</label>
       </div>
       <label class="ai-check"><input type="checkbox" id="im-lt-anteprima"${p.letturaAnteprima ? " checked" : ""}> Mostra l'anteprima del testo nella lista</label>
+      <label class="ai-check"><input type="checkbox" id="im-lt-passaggio"${p.letturaSegnaLettoAlPassaggio ? " checked" : ""}> Segna come letto passando il mouse sul messaggio per 1 secondo</label>
       <div class="settings-grid">
         <div class="settings-lbl">Immagini dei messaggi:</div>
         <select class="settings-fld" id="im-lt-immagini">
@@ -283,6 +284,7 @@ export function apriPannelloMail(chiave, opzioni = {}) {
     letturaAnteprima: !!base.letturaAnteprima,
     letturaImmagini: normImmagini(base.letturaImmagini),
     letturaSegnaLettoDopo: secondiSegnaLetto(base.letturaSegnaLettoDopo),
+    letturaSegnaLettoAlPassaggio: base.letturaSegnaLettoAlPassaggio !== false,
     composizioneFormato: normFormato(base.composizioneFormato),
     composizioneACapo: base.composizioneACapo !== false,
     composizioneIncludiOriginale: base.composizioneIncludiOriginale !== false,
@@ -362,6 +364,10 @@ export function apriPannelloMail(chiave, opzioni = {}) {
     );
     q("#im-lt-anteprima").addEventListener("change", async (e) => {
       inp.letturaAnteprima = e.target.checked;
+      await salva();
+    });
+    q("#im-lt-passaggio").addEventListener("change", async (e) => {
+      inp.letturaSegnaLettoAlPassaggio = e.target.checked;
       await salva();
     });
     q("#im-lt-immagini").addEventListener("change", async (e) => {

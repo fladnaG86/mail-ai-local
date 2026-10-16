@@ -480,3 +480,26 @@ fn split_rapporto_fuori_intervallo_e_rifiutato_al_salvataggio() {
         assert!(config::valida(&p).is_err());
     }
 }
+
+// --- Segna come letto al passaggio del mouse ----------------------------------
+
+#[test]
+fn segna_letto_al_passaggio_e_attivo_di_default_e_viaggia_come_camel_case() {
+    let p = Preferenze::default();
+    assert!(p.lettura_segna_letto_al_passaggio);
+    let json = serde_json::to_value(&p).unwrap();
+    assert_eq!(json["letturaSegnaLettoAlPassaggio"], serde_json::json!(true));
+}
+
+#[test]
+fn segna_letto_al_passaggio_manca_nel_file_vecchio_ed_e_attivo() {
+    let p: Preferenze = serde_json::from_str("{}").unwrap();
+    assert!(p.lettura_segna_letto_al_passaggio);
+}
+
+#[test]
+fn segna_letto_al_passaggio_spento_resta_spento() {
+    let p: Preferenze = serde_json::from_str(r#"{"letturaSegnaLettoAlPassaggio":false}"#).unwrap();
+    assert!(!p.lettura_segna_letto_al_passaggio);
+    assert!(!p.normalizzata().lettura_segna_letto_al_passaggio);
+}
