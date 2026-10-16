@@ -449,6 +449,13 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 }
 .ai-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
 .ai-btn--accent { border-color: var(--accent); color: var(--accent); }
+.inoltro-rapido { display: inline-flex; align-items: center; gap: 6px; margin-left: 14px; font-size: 11px; color: var(--text-secondary); }
+.inoltro-rapido-campo {
+  width: 190px; font: inherit; font-size: 12px; color: var(--text-primary);
+  background: var(--sidebar-sel-bg); border: 1px solid var(--btn-border); border-radius: 6px; padding: 3px 8px;
+}
+.inoltro-rapido-campo:focus { outline: none; border-color: var(--campo-focus); }
+.inoltro-rapido-campo::placeholder { color: var(--text-placeholder); }
 .ai-model { margin-left: auto; font-size: 11px; color: var(--text-secondary); }
 .ai-model b { color: var(--text-primary); font-weight: 600; }
 

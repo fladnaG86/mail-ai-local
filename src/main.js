@@ -1987,6 +1987,21 @@ function collegaAssistente(readingEl, messaggio) {
       destinazioneIA = selettore.value === "cloud" ? "cloud" : "locale";
     });
   }
+  // «Inoltro rapido»: un indirizzo e Invio aprono l'inoltro già indirizzato.
+  const inoltro = aiBar.querySelector(".inoltro-rapido-campo");
+  if (inoltro) {
+    inoltro.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      const indirizzo = inoltro.value.trim();
+      if (!indirizzo) return;
+      if (!/^[^\s@<>,;]+@[^\s@<>,;]+\.[^\s@<>,;]+$/.test(indirizzo)) {
+        stato(`«${indirizzo}» non è un indirizzo valido.`, true);
+        return;
+      }
+      inoltro.value = "";
+      apriInoltro(messaggio, indirizzo);
+    });
+  }
   aiBar.addEventListener("click", (e) => {
     const bottone = e.target.closest("[data-ai]");
     if (!bottone) return;
@@ -2210,7 +2225,7 @@ async function apriRisposta(messaggio, tutti) {
 }
 
 /** Apre la finestra di composizione per "Inoltra" (con gli allegati originali). */
-async function apriInoltro(messaggio) {
+async function apriInoltro(messaggio, destinatario = "") {
   if (!messaggio) return;
   const mittente = await mittenteAccount();
   let bozza = null;
@@ -2223,6 +2238,7 @@ async function apriInoltro(messaggio) {
     if (b) bozza = { a: "", cc: "", oggetto: b.oggetto, corpo: b.corpoCitato };
   }
   if (!bozza) bozza = bozzaInoltroLocale(messaggio);
+  if (destinatario) bozza.a = destinatario;
   const overlay = apriComposizione({
     ...bozza,
     mittente,

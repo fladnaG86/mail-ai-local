@@ -627,6 +627,9 @@ export function renderReading(root, message, opzioni = {}) {
     <button class="ai-btn ai-btn--accent" data-ai="reply">✦ Rispondi</button>
     <button class="ai-btn" data-ai="actions">✦ Estrai azioni</button>
     <button class="ai-btn" data-ai="translate">✦ Traduci</button>
+    <label class="inoltro-rapido">Inoltro rapido:
+      <input class="inoltro-rapido-campo" type="text" inputmode="email" autocomplete="off" spellcheck="false" placeholder="indirizzo e Invio" aria-label="Inoltro rapido: indirizzo del destinatario" />
+    </label>
     <select class="ai-model-select" aria-label="Destinazione dei dati">
       <option value="locale">locale · thinkingcap-27b</option>
       <option value="cloud">cloud · OpenRouter</option>
