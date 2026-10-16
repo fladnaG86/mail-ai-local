@@ -11,6 +11,7 @@
  * riproduce le stesse regole.
  */
 
+import { rendiSpostabile } from "./finestre.js";
 import { PULSANTE_CHIUDI } from "./blocco-i2.js";
 
 /** Suoni di sistema offerti (specchia `config.rs`). `"nessuno"` = silenzio. */
@@ -207,6 +208,7 @@ export function apriPannelloNotifiche(opzioni = {}) {
       <div class="settings-nota" role="status" aria-live="polite"></div>
     </div>`;
   document.body.append(overlay);
+  rendiSpostabile(overlay);
 
   const notaEl = overlay.querySelector(".settings-nota");
   const nota = (testo, errore) => {

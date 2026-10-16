@@ -13,6 +13,7 @@
  * `contatti_esporta_vcard`, `contatti_suggerisci`); qui non si tocca il kernel.
  */
 
+import { rendiSpostabile } from "./finestre.js";
 import { fugaHtml as fuga } from "./mail-actions.js";
 import { PULSANTE_CHIUDI } from "./blocco-i2.js";
 
@@ -462,6 +463,7 @@ export function apriRubrica(opzioni = {}) {
   overlay.className = "rubrica-overlay";
   overlay.innerHTML = markup();
   document.body.append(overlay);
+  rendiSpostabile(overlay);
 
   const listaEl = overlay.querySelector("#rubrica-lista");
   const schedaEl = overlay.querySelector("#rubrica-scheda");

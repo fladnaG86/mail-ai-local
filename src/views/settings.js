@@ -21,6 +21,7 @@
  */
 
 // Solo il markup della ✕ di chiusura (stringa pura): nessuna dipendenza dal DOM.
+import { rendiSpostabile } from "./finestre.js";
 import { PULSANTE_CHIUDI } from "./blocco-i2.js";
 
 /** Gruppi e riquadri del riferimento misurato (§2.5). `azione` marca i vivi. */
@@ -201,6 +202,7 @@ export function apriImpostazioni(opzioni = {}) {
   overlay.className = "settings-overlay";
   overlay.innerHTML = markup();
   document.body.append(overlay);
+  rendiSpostabile(overlay);
 
   const notaEl = overlay.querySelector(".settings-nota");
   const nota = (testo, errore) => {

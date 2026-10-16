@@ -16,6 +16,7 @@
  * `Richiedi conferma di lettura`, `Richiedi conferma di recapito`.
  */
 
+import { rendiSpostabile } from "./finestre.js";
 import { apriMenu, fugaHtml } from "./mail-actions.js";
 
 // ---------------------------------------------------------------------------
@@ -349,6 +350,7 @@ export function apriModuloRicercaAvanzata(opzioni = {}) {
       <div class="compose-esito" id="i2-esito" role="status"></div>
     </div>`;
   document.body.append(overlay);
+  rendiSpostabile(overlay);
 
   const campo = (id) => overlay.querySelector(`#${id}`);
   const chiudi = () => overlay.remove();
@@ -471,6 +473,7 @@ export function apriOverlayPannello(titolo, contenuto, opzioni) {
   overlay.className = "mail-settings-overlay";
   overlay.innerHTML = chromePannello(titolo, contenuto);
   document.body.append(overlay);
+  rendiSpostabile(overlay);
   const notaEl = overlay.querySelector(".settings-nota");
   const nota = (t, err) => {
     notaEl.textContent = t || "";

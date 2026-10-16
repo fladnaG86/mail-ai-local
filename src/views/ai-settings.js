@@ -22,6 +22,7 @@
  * importa `theme.js`, quindi si carica anche senza un DOM (test con `node --test`).
  */
 
+import { rendiSpostabile } from "./finestre.js";
 import { impostaFirma } from "./compose.js";
 import { PULSANTE_CHIUDI } from "./blocco-i2.js";
 
@@ -374,6 +375,7 @@ export function apriAssistenteIA(opzioni = {}) {
   overlay.className = "ai-settings-overlay";
   overlay.innerHTML = markup(p);
   document.body.append(overlay);
+  rendiSpostabile(overlay);
 
   const notaEl = overlay.querySelector(".settings-nota");
   const nota = (testo, errore) => {

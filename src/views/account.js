@@ -25,6 +25,7 @@
  *   ora": serve a provare subito che le credenziali funzionino.
  */
 
+import { rendiSpostabile } from "./finestre.js";
 import { PULSANTE_CHIUDI } from "./blocco-i2.js";
 
 const SUGGERIMENTI = {
@@ -590,6 +591,7 @@ export function apriAccount(opzioni = {}) {
   finestra.innerHTML = markup(statoWin);
   const overlay = finestra.firstElementChild;
   document.body.append(overlay);
+  rendiSpostabile(overlay);
 
   const chiudi = () => overlay.remove();
   overlay.addEventListener("keydown", (e) => {

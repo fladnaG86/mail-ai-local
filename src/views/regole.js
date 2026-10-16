@@ -15,6 +15,7 @@
  * (`src-tauri/src/mail/regole.rs`): qui c'è la gestione e la resa.
  */
 
+import { rendiSpostabile } from "./finestre.js";
 import { PULSANTE_CHIUDI } from "./blocco-i2.js";
 
 /** Tipi di azione ammessi, nell'ordine in cui il pannello li offre (specchia `config.rs`). */
@@ -250,6 +251,7 @@ export function apriPannelloRegole(opzioni = {}) {
       <div class="settings-nota" role="status" aria-live="polite"></div>
     </div>`;
   document.body.append(overlay);
+  rendiSpostabile(overlay);
 
   const notaEl = overlay.querySelector(".settings-nota");
   const nota = (testo, errore) => {

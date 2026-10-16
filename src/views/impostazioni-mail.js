@@ -16,6 +16,7 @@
  * esattamente come nel pannello Assistente IA.
  */
 
+import { rendiSpostabile } from "./finestre.js";
 import {
   normalizzaSostituzioni,
   testoSostituzione,
@@ -322,6 +323,7 @@ export function apriPannelloMail(chiave, opzioni = {}) {
       <div class="settings-nota" role="status" aria-live="polite"></div>
     </div>`;
   document.body.append(overlay);
+  rendiSpostabile(overlay);
 
   const notaEl = overlay.querySelector(".settings-nota");
   const nota = (testo, errore) => {

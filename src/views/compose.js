@@ -25,6 +25,7 @@
  * applicano davvero qui — vedi `impostaPreferenzeComposizione`.
  */
 
+import { rendiSpostabile } from "./finestre.js";
 import {
   stileCarattere,
   limitaDimensione,
@@ -1654,51 +1655,6 @@ function avvisoChiusura(overlay, onChiudi) {
 }
 
 /**
- * Tiene la finestra trascinata dentro lo schermo: `pos` è lo scarto dal centro.
- * Resta sempre visibile la barra del titolo (40 px) e almeno `margine` px in
- * orizzontale, così la finestra si può riafferrare.
- */
-export function limitaPosizioneFinestra(pos, finestra, vista, margine = 80) {
-  const sinistra = (vista.w - finestra.w) / 2;
-  const alto = (vista.h - finestra.h) / 2;
-  const limita = (v, min, max) => Math.max(min, Math.min(max, v));
-  return {
-    x: limita(pos.x, margine - finestra.w - sinistra, vista.w - margine - sinistra),
-    y: limita(pos.y, -alto, vista.h - 40 - alto),
-  };
-}
-
-/** Trascinamento della finestra dalla barra del titolo (non dai suoi pulsanti). */
-function collegaTrascinamento(overlay) {
-  const finestra = overlay.querySelector(".compose-window");
-  const barra = overlay.querySelector(".compose-titlebar");
-  if (!finestra || !barra) return;
-  let pos = { x: 0, y: 0 };
-  barra.addEventListener("mousedown", (e) => {
-    if (e.button !== 0 || e.target.closest("button")) return;
-    e.preventDefault();
-    const partenza = { mx: e.clientX, my: e.clientY, ...pos };
-    barra.classList.add("compose-titlebar--trascina");
-    const muovi = (ev) => {
-      const r = finestra.getBoundingClientRect();
-      pos = limitaPosizioneFinestra(
-        { x: partenza.x + ev.clientX - partenza.mx, y: partenza.y + ev.clientY - partenza.my },
-        { w: r.width, h: r.height },
-        { w: window.innerWidth, h: window.innerHeight },
-      );
-      finestra.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
-    };
-    const rilascia = () => {
-      document.removeEventListener("mousemove", muovi);
-      document.removeEventListener("mouseup", rilascia);
-      barra.classList.remove("compose-titlebar--trascina");
-    };
-    document.addEventListener("mousemove", muovi);
-    document.addEventListener("mouseup", rilascia);
-  });
-}
-
-/**
  * Apre la finestra di composizione sopra la vista principale.
  *
  * `opzioni`: `{ a, cc, oggetto, corpo, titolo, mittente, onInvia, onControllo }`.
@@ -1734,7 +1690,7 @@ export function apriComposizione(opzioni = {}) {
     etichettaIA: opzioni.etichettaIA,
   });
   document.body.append(overlay);
-  collegaTrascinamento(overlay);
+  rendiSpostabile(overlay);
   // Le opzioni restano legate alla finestra: servono a "Invia lo stesso".
   overlay.__composeOpzioni = opzioni;
   // Elenco degli allegati di questa finestra: {nome, mime, dimensione, contenuto(base64)}.

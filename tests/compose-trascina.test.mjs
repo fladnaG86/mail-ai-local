@@ -27,7 +27,8 @@ before(async () => {
   globalThis.localStorage = window_.localStorage;
   globalThis.KeyboardEvent = window_.KeyboardEvent;
   globalThis.CustomEvent = window_.CustomEvent;
-  ({ apriComposizione, limitaPosizioneFinestra } = await import("../src/views/compose.js"));
+  ({ apriComposizione } = await import("../src/views/compose.js"));
+  ({ limitaPosizioneFinestra } = await import("../src/views/finestre.js"));
 });
 
 const VISTA = { w: 1400, h: 800 };

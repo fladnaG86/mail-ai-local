@@ -18,6 +18,7 @@
  * tocca il kernel.
  */
 
+import { rendiSpostabile } from "./finestre.js";
 import { fugaHtml as fuga } from "./mail-actions.js";
 import { collegaCampoDestinatario } from "./contatti.js";
 import { PULSANTE_CHIUDI } from "./blocco-i2.js";
@@ -425,6 +426,7 @@ export function apriAgenda(opzioni = {}) {
   overlay.className = "agenda-overlay";
   overlay.innerHTML = markupAgenda();
   document.body.append(overlay);
+  rendiSpostabile(overlay);
 
   const corpo = overlay.querySelector("#agenda-corpo");
   const notaEl = overlay.querySelector(".agenda-nota");
@@ -553,6 +555,7 @@ export function apriNuovaRiunione(opzioni = {}) {
   overlay.className = "nuova-overlay";
   overlay.innerHTML = markupNuova(iniziale);
   document.body.append(overlay);
+  rendiSpostabile(overlay);
 
   const notaEl = overlay.querySelector(".nuova-nota");
   const nota = (testo, errore) => {

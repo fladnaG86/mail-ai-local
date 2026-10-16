@@ -13,6 +13,7 @@
  * e salvataggi in memoria: serve alle prove visive.
  */
 
+import { rendiSpostabile } from "./finestre.js";
 import { normalizzaFirme, firmeEffettive, nomeFirma } from "./firme.js";
 import {
   PROTEZIONI,
@@ -57,6 +58,7 @@ function telaio(chiave, opzioni = {}) {
       <div class="settings-nota" role="status" aria-live="polite"></div>
     </div>`;
   document.body.append(overlay);
+  rendiSpostabile(overlay);
   const notaEl = overlay.querySelector(".settings-nota");
   const nota = (testo, errore) => {
     notaEl.textContent = testo || "";

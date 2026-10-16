@@ -574,7 +574,6 @@ html[data-tauri] .titlebar { padding-left: 78px; }
   user-select: none;
   cursor: grab;
 }
-.compose-titlebar--trascina { cursor: grabbing; }
 .compose-tb-title { flex: 1; text-align: center; font-weight: 600; }
 
 .compose-ribbon {
@@ -1753,3 +1752,62 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 
 /* Nota in grassetto per le voci dichiarate non disponibili. */
 .im-nota--forte { color: var(--text-secondary); }
+
+/* ---------- Finestre interne: un solo aspetto ----------
+   Nuovo messaggio, Impostazioni, Assistente IA, Rubrica, Agenda, Account e tutti
+   i pannelli condividono velo, palette, bordo, ombra e barra del titolo. Le
+   variabili locali (`--settings-*`, `--rubrica-*`, `--agenda-*`) puntano ai
+   token del tema, così scuro e chiaro restano coerenti. In coda al file per
+   vincere sulle regole di ogni finestra. */
+.compose-overlay,
+.settings-overlay,
+.ai-settings-overlay,
+.mail-settings-overlay,
+.rubrica-overlay,
+.agenda-overlay,
+.nuova-overlay { background: rgba(0, 0, 0, .3); }
+
+:root[data-theme] .settings-win,
+:root[data-theme] .ai-settings-win {
+  --settings-bg: var(--window-bg); --settings-chrome: var(--chrome-bg); --settings-gsep: var(--pane-sep);
+}
+:root[data-theme] .rubrica-win {
+  --rubrica-bg: var(--window-bg); --rubrica-chrome: var(--chrome-bg); --rubrica-gsep: var(--pane-sep);
+}
+:root[data-theme] .agenda-win,
+:root[data-theme] .nuova-win {
+  --agenda-bg: var(--window-bg); --agenda-chrome: var(--chrome-bg); --agenda-gsep: var(--pane-sep);
+}
+
+.compose-window,
+.settings-win,
+.ai-settings-win,
+.rubrica-win,
+.agenda-win,
+.nuova-win,
+.account-window,
+.i2-ricerca-win {
+  background: var(--window-bg);
+  border: 1px solid var(--pane-sep);
+  border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .45);
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
+}
+.i2-ricerca-win { margin: 0; }
+
+.compose-titlebar,
+.settings-titlebar,
+.rubrica-titlebar,
+.agenda-titlebar {
+  flex: 0 0 auto; height: 40px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px; padding: 0 12px;
+  background: var(--chrome-bg);
+  font-size: 13px; font-weight: 600;
+  cursor: grab; user-select: none;
+}
+.finestra-barra--trascina { cursor: grabbing; }
+.compose-tb-title,
+.settings-title,
+.rubrica-title,
+.agenda-title { flex: 1; text-align: center; }
