@@ -332,7 +332,7 @@ export function renderListaConversazioni(root, conversazioni = [], opzioni = {})
 // voce (niente confronti sul testo etichetta). Le chiavi senza gestore sono le
 // voci non disponibili nella v1 (vedi `NOMI_VOCI_V1`).
 const ribbonGroups = [
-  { key: "mail-new", ic: "✉︎", lb: "Nuovo messaggio<br>di posta elettronica" },
+  { key: "mail-new", ic: "✎", lb: "Nuovo Messaggio" },
   { key: "new-items", ic: "📅", lb: "Nuovi<br>elementi" },
   { sep: true },
   { key: "delete", ic: "🗑", lb: "Elimina" },

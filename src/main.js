@@ -2576,6 +2576,10 @@ function ridisegna() {
 
 /** Evidenzia la voce "Filtra" del ribbon e ne mostra il filtro attivo. */
 function evidenziaFiltro() {
+  // Filtri rapidi della barra superiore: accesi solo se il filtro è uno dei due.
+  document.querySelectorAll(".filtro-btn").forEach((b) => {
+    b.setAttribute("aria-pressed", b.dataset.filtro === filtroCorrente ? "true" : "false");
+  });
   const bottone = ribbonEl && ribbonEl.querySelector('[data-rb="filter"]');
   if (!bottone) return;
   const attivo = filtroCorrente !== "tutti";
@@ -3456,6 +3460,17 @@ function collegaSelezioneCartelle(sidebar) {
   });
 }
 
+/** «Tutti» / «Non letti» della barra superiore: stesso filtro del nastro. */
+function collegaFiltriRapidi() {
+  document.querySelectorAll(".filtro-btn").forEach((b) => {
+    b.addEventListener("click", () => {
+      filtroCorrente = b.dataset.filtro;
+      evidenziaFiltro();
+      ridisegna();
+    });
+  });
+}
+
 /** Menu "Filtra posta elettronica": Tutti · Non letti · Contrassegnati · Con allegati · Oggi. */
 function apriFiltro(ancora) {
   const voci = FILTRI.map((f) => ({
@@ -3617,6 +3632,7 @@ export async function boot() {
   searchInput = document.querySelector("#search-input");
   collegaRicerca();
   collegaSplitter();
+  collegaFiltriRapidi();
 
   // Preferenze dell'utente (Milestone 8): tema, firma, assistente. Il tema lo
   // applica `initTheme`; qui si caricano le preferenze e si collegano le

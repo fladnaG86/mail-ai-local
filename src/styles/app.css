@@ -85,10 +85,12 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 }
 .win-close:hover { background: var(--sidebar-sel-bg); color: var(--text-primary); }
 .win-close:focus-visible { outline: 2px solid var(--campo-focus); outline-offset: 1px; }
+.titlebar-title { display: none; }
+.titlebar-fill { flex: 1 1 0; }
 .search {
-  display: inline-flex; align-items: center; gap: 6px;
-  width: 220px; padding: 3px 10px;
-  background: var(--sidebar-sel-bg); border: 1px solid var(--btn-border); border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 8px;
+  width: 440px; max-width: 40vw; padding: 6px 14px;
+  background: var(--sidebar-sel-bg); border: 1px solid var(--btn-border); border-radius: 999px;
   color: var(--text-secondary); font-size: 12px;
   -webkit-app-region: no-drag;
 }
@@ -101,13 +103,24 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 .search-input:focus { outline: none; }
 .search:focus-within { border-color: var(--campo-focus); }
 .help { color: var(--text-secondary); font-size: 15px; cursor: pointer; }
+.filtri-rapidi {
+  display: inline-flex; gap: 2px; padding: 2px;
+  background: var(--sidebar-sel-bg); border-radius: 8px;
+  -webkit-app-region: no-drag;
+}
+.filtro-btn {
+  font: inherit; font-size: 12px; padding: 3px 12px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--text-secondary); cursor: pointer;
+}
+.filtro-btn[aria-pressed="true"] { background: var(--row-sel-bg); color: var(--text-primary); }
 
 /* La barra del titolo trascina la finestra (`-webkit-app-region: drag`), ma
    dentro un'area di trascinamento il webview NON consegna i clic agli elementi:
    ogni controllo interattivo va dichiarato `no-drag`, altrimenti resta muto
    nell'app vera pur funzionando nelle prove nel browser. */
 .titlebar .search,
-.titlebar .help { -webkit-app-region: no-drag; }
+.titlebar .help,
+.titlebar .filtri-rapidi { -webkit-app-region: no-drag; }
 
 /* ---------- schede del ribbon ---------- */
 .tab { cursor: pointer; }
@@ -132,25 +145,39 @@ html[data-tauri] .titlebar { padding-left: 78px; }
   height: var(--h-ribbon);
   background: var(--chrome-bg);
   border-bottom: 1px solid var(--list-header-sep);
-  padding: 0 16px 8px;
+  padding: 0 16px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
 }
-.ribbon-tabs { height: 26px; display: flex; align-items: flex-end; gap: 22px; font-size: 12px; }
-.tab { color: var(--text-secondary); padding-bottom: 4px; }
-.tab--active { color: var(--text-primary); font-weight: 600; border-bottom: 2px solid var(--accent); }
-.ribbon-groups { display: flex; align-items: flex-start; gap: 2px; margin-top: 8px; }
-.rb { width: 74px; text-align: center; }
-.rb .ic { font-size: 20px; line-height: 1; color: var(--text-secondary); }
-.rb .lb { font-size: 10px; color: var(--text-secondary); margin-top: 4px; line-height: 1.25; }
-.rb--wide { width: 86px; }
+.ribbon-tabs {
+  display: flex; gap: 2px; padding: 2px; -webkit-app-region: no-drag;
+  background: var(--sidebar-sel-bg); border-radius: 8px; font-size: 11px;
+}
+.tab { color: var(--text-secondary); padding: 3px 10px; border-radius: 6px; }
+.tab--active { color: var(--text-primary); font-weight: 600; background: var(--row-sel-bg); }
+.ribbon-groups { flex: 1; min-width: 0; display: flex; align-items: center; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.ribbon-groups::-webkit-scrollbar { display: none; }
+.rb { width: 58px; flex: 0 0 auto; text-align: center; border-radius: 8px; padding: 4px 0; cursor: pointer; }
+.rb .ic { font-size: 19px; line-height: 1; color: var(--text-secondary); }
+.rb .lb { font-size: 10px; color: var(--text-secondary); margin-top: 3px; line-height: 1.2; }
+.rb--wide { width: 66px; }
 .rb--ai {
   background: var(--ai-panel-bg); border: 1px solid var(--ai-accent); border-radius: 7px;
   padding: 4px 2px; cursor: pointer;
 }
 .rb--ai .ic { color: var(--ai-accent); }
 .rb--ai .lb { color: var(--text-primary); font-weight: 700; }
-.rb-sep { width: 1px; height: 62px; background: var(--btn-border); margin: 0 8px; }
+.rb-sep { width: 1px; height: 40px; flex: 0 0 auto; background: var(--btn-border); margin: 0 5px; }
+/* «Nuovo Messaggio»: il pulsante in evidenza a sinistra del nastro. */
+.rb[data-rb="mail-new"] {
+  width: auto; display: flex; align-items: center; gap: 8px; margin-right: 8px; padding: 10px 16px;
+  background: var(--accent); color: var(--accent-text); border-radius: 10px;
+}
+.rb[data-rb="mail-new"] .ic { font-size: 16px; color: inherit; }
+.rb[data-rb="mail-new"] .lb { margin: 0; font-size: 12px; font-weight: 600; color: inherit; white-space: nowrap; }
+.rb[data-rb="mail-new"]:hover { background: var(--accent-hover); }
 
 /* ---------- corpo ---------- */
 .body { flex: 1; display: flex; min-height: 0; }

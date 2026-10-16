@@ -103,8 +103,8 @@
   /* Scala del testo dell'interfaccia (blocco P): numero puro, default 1.
      La imposta il pannello «Accessibilità»; `app.css` la usa con `zoom` su #app. */
   --ui-scala-testo:   1;
-  --h-titlebar:       28px;
-  --h-ribbon:        108px;
+  --h-titlebar:       46px;
+  --h-ribbon:         78px;
   --w-sidebar:       234px;
   --h-list-head:      26px;
   --h-row:            48px;

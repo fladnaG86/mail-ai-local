@@ -19,7 +19,7 @@
           aria-label="Invia e ricevi"
         >↻</button>
         <span class="titlebar-title" id="window-title">Posta in arrivo</span>
-        <span class="titlebar-spacer" aria-hidden="true"></span>
+        <span class="titlebar-fill" aria-hidden="true"></span>
         <span class="search" id="search-box">
           <span class="search-ic" aria-hidden="true">🔍</span>
           <input
@@ -32,16 +32,21 @@
             spellcheck="false"
           />
         </span>
-        <span class="help">?</span>
-      </header>
-
-      <!-- ribbon (108 pt) -->
-      <nav class="ribbon">
+        <span class="filtri-rapidi" role="group" aria-label="Filtro rapido">
+          <button type="button" class="filtro-btn" data-filtro="tutti" aria-pressed="true">Tutti</button>
+          <button type="button" class="filtro-btn" data-filtro="non-letti" aria-pressed="false">Non letti</button>
+        </span>
+        <span class="titlebar-fill" aria-hidden="true"></span>
         <div class="ribbon-tabs">
           <span class="tab tab--active" data-scheda="home">Home</span>
           <span class="tab" data-scheda="organizza">Organizza</span>
           <span class="tab" data-scheda="strumenti">Strumenti</span>
         </div>
+        <span class="help">?</span>
+      </header>
+
+      <!-- ribbon (108 pt) -->
+      <nav class="ribbon">
         <div class="ribbon-groups" id="ribbon-groups"></div>
       </nav>
 
