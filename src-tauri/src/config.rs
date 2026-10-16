@@ -90,6 +90,11 @@ pub const LETTURA_ZOOM_DEFAULT: i64 = 100;
 pub const LETTURA_ZOOM_MIN: i64 = 50;
 pub const LETTURA_ZOOM_MAX: i64 = 400;
 
+/// Quota di altezza data alla lista rispetto alla lettura quando la lettura sta
+/// sotto la lista (0 = lista al minimo, 1 = al massimo). Il divisorio trascinabile
+/// la scrive.
+pub const SPLIT_RAPPORTO_DEFAULT: f64 = 0.5;
+
 // ---------------------------------------------------------------------------
 // Blocco N — Visualizza, Cerca, Impostazioni di sincronizzazione, Archiviazione.
 // Etichette del riferimento: `/ERPreferencesWindow/Views/Display = Visualizza`,
@@ -661,6 +666,8 @@ pub struct Preferenze {
     /// Scala del testo del messaggio letto, in percentuale (blocco R):
     /// i pulsanti A⁻/A⁺ del pannello di lettura la cambiano.
     pub lettura_zoom: i64,
+    /// Rapporto lista/lettura del divisorio trascinabile, in 0..=1.
+    pub split_rapporto: f64,
     // --- Blocco D: Composizione ---
     /// Formato predefinito: "html" | "testo".
     pub composizione_formato: String,
@@ -801,6 +808,7 @@ impl Default for Preferenze {
             lettura_immagini: LETTURA_IMMAGINI_DEFAULT.to_string(),
             lettura_anteprima: false,
             lettura_zoom: LETTURA_ZOOM_DEFAULT,
+            split_rapporto: SPLIT_RAPPORTO_DEFAULT,
             composizione_formato: COMPOSIZIONE_FORMATO_DEFAULT.to_string(),
             composizione_a_capo: true,
             composizione_includi_originale: true,
@@ -898,6 +906,9 @@ impl Preferenze {
         }
         if !(LETTURA_ZOOM_MIN..=LETTURA_ZOOM_MAX).contains(&self.lettura_zoom) {
             self.lettura_zoom = LETTURA_ZOOM_DEFAULT;
+        }
+        if !(0.0..=1.0).contains(&self.split_rapporto) {
+            self.split_rapporto = SPLIT_RAPPORTO_DEFAULT;
         }
         if !(CARATTERE_DIMENSIONE_MIN..=CARATTERE_DIMENSIONE_MAX)
             .contains(&self.carattere_dimensione)
@@ -1084,6 +1095,12 @@ pub fn valida(p: &Preferenze) -> Result<()> {
         return Err(ConfigError::PreferenzaNonValida {
             campo: "letturaZoom".to_string(),
             valore: p.lettura_zoom.to_string(),
+        });
+    }
+    if !(0.0..=1.0).contains(&p.split_rapporto) {
+        return Err(ConfigError::PreferenzaNonValida {
+            campo: "splitRapporto".to_string(),
+            valore: p.split_rapporto.to_string(),
         });
     }
     // Blocco N: intervalli numerici ammessi.

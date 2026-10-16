@@ -437,3 +437,46 @@ fn lettura_zoom_ai_bordi_resta() {
     let n2 = p2.normalizzata();
     assert_eq!(n2.lettura_zoom, config::LETTURA_ZOOM_MAX);
 }
+
+// --- Divisorio lista / lettura -----------------------------------------------
+
+#[test]
+fn split_rapporto_di_default_e_meta_e_viaggia_come_camel_case() {
+    let p = Preferenze::default();
+    assert_eq!(p.split_rapporto, config::SPLIT_RAPPORTO_DEFAULT);
+    let json = serde_json::to_value(&p).unwrap();
+    assert_eq!(json["splitRapporto"], serde_json::json!(0.5));
+}
+
+#[test]
+fn split_rapporto_manca_nel_file_vecchio_e_prende_il_default() {
+    let p: Preferenze = serde_json::from_str("{}").unwrap();
+    assert_eq!(p.split_rapporto, config::SPLIT_RAPPORTO_DEFAULT);
+}
+
+#[test]
+fn split_rapporto_fuori_scala_o_non_finito_torna_al_default() {
+    for storto in [-0.1, 1.5, f64::NAN, f64::INFINITY] {
+        let mut p = Preferenze::default();
+        p.split_rapporto = storto;
+        assert_eq!(p.normalizzata().split_rapporto, config::SPLIT_RAPPORTO_DEFAULT);
+    }
+}
+
+#[test]
+fn split_rapporto_valido_e_bordi_restano() {
+    for buono in [0.0, 0.3, 1.0] {
+        let mut p = Preferenze::default();
+        p.split_rapporto = buono;
+        assert_eq!(p.normalizzata().split_rapporto, buono);
+    }
+}
+
+#[test]
+fn split_rapporto_fuori_intervallo_e_rifiutato_al_salvataggio() {
+    for storto in [-0.5, 2.0, f64::NAN] {
+        let mut p = Preferenze::default();
+        p.split_rapporto = storto;
+        assert!(config::valida(&p).is_err());
+    }
+}

@@ -448,6 +448,119 @@ function applicaLayoutLettura() {
   const classe = classePannelloLettura(preferenzeCorrenti && preferenzeCorrenti.letturaPannello);
   mainEl.classList.remove("main--lettura-destra", "main--lettura-nascosta");
   if (classe) mainEl.classList.add(classe);
+  applicaSplit();
+}
+
+// ---------------------------------------------------------------------------
+// Divisorio lista / lettura
+// ---------------------------------------------------------------------------
+
+let splitterEl = null;
+
+/** Minimo spazio per la lista in pixel. */
+const LISTA_MIN_PX = 120;
+
+/** Minimo spazio per la lettura in pixel. */
+const LETTURA_MIN_PX = 200;
+
+/** Spazio occupato dal divisorio stesso, tolto alla corsa. */
+const SPLITTER_PX = 4;
+
+const SPLIT_RAPPORTO_DEFAULT = 0.5;
+
+/** Il rapporto salvato in `config.json`, o metà se manca o è storto. */
+function rapportoSalvato() {
+  const r = preferenzeCorrenti && preferenzeCorrenti.splitRapporto;
+  return Number.isFinite(r) && r >= 0 && r <= 1 ? r : SPLIT_RAPPORTO_DEFAULT;
+}
+
+/**
+ * Applica il rapporto lista/lettura (0..1: 0 = lista minima, 1 = massima).
+ * Senza argomento usa quello delle preferenze. Vale solo con la lettura sotto
+ * la lista: negli altri layout toglie gli stili messi in precedenza, perché il
+ * layout a griglia o senza lettura li subirebbe.
+ */
+function applicaSplit(rapporto = rapportoSalvato()) {
+  if (!listEl || !readingEl || !mainEl) return;
+  const sotto = classePannelloLettura(preferenzeCorrenti && preferenzeCorrenti.letturaPannello) === "";
+  if (!sotto) {
+    listEl.style.flex = "";
+    listEl.style.height = "";
+    readingEl.style.flex = "";
+    return;
+  }
+  const corsa = mainEl.offsetHeight - LISTA_MIN_PX - LETTURA_MIN_PX - SPLITTER_PX;
+  if (corsa <= 0) return;
+  const clamped = Math.max(0, Math.min(1, rapporto));
+  listEl.style.flex = "0 0 auto";
+  listEl.style.height = `${LISTA_MIN_PX + clamped * corsa}px`;
+  readingEl.style.flex = "1 1 auto";
+}
+
+/** Il rapporto che la lista ha adesso a schermo (non quello salvato). */
+function rapportoCorrenteDaDOM() {
+  const corsa = mainEl.offsetHeight - LISTA_MIN_PX - LETTURA_MIN_PX - SPLITTER_PX;
+  if (corsa <= 0) return SPLIT_RAPPORTO_DEFAULT;
+  return Math.max(0, Math.min(1, (listEl.offsetHeight - LISTA_MIN_PX) / corsa));
+}
+
+/** Salva il rapporto nelle preferenze: `salvaImpostazioni` lo riapplica. */
+function salvaRapporto(rapporto) {
+  const preferenze = Object.assign({}, preferenzeCorrenti || {}, { splitRapporto: rapporto });
+  salvaImpostazioni({ theme: getTheme(), preferenze }).catch((err) => {
+    stato(`Divisorio non salvato: ${err && err.message ? err.message : err}`, true);
+  });
+}
+
+/**
+ * Trascinamento del divisorio: mousemove/mouseup stanno sul documento, così il
+ * mouse può uscire dal divisorio senza perdere il gesto. Parte dal rapporto che
+ * la lista ha a schermo, quindi si può trascinare quante volte si vuole.
+ */
+function avviaTrascinamentoSplit(e) {
+  if (!listEl || !readingEl || !mainEl) return;
+  if (classePannelloLettura(preferenzeCorrenti && preferenzeCorrenti.letturaPannello) !== "") return;
+  e.preventDefault();
+
+  const y0 = e.clientY;
+  const rapporto0 = rapportoCorrenteDaDOM();
+  let mosso = false;
+  if (splitterEl) splitterEl.classList.add("active");
+
+  function onMove(ev) {
+    const corsa = mainEl.getBoundingClientRect().height - LISTA_MIN_PX - LETTURA_MIN_PX - SPLITTER_PX;
+    if (corsa <= 0) return;
+    mosso = true;
+    applicaSplit(rapporto0 + (ev.clientY - y0) / corsa);
+  }
+
+  function onUp() {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    if (splitterEl) splitterEl.classList.remove("active");
+    if (mosso) salvaRapporto(rapportoCorrenteDaDOM());
+  }
+
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup", onUp);
+}
+
+/** Doppio clic sul divisorio: torna a metà e lo salva. */
+function resettaSplit() {
+  applicaSplit(SPLIT_RAPPORTO_DEFAULT);
+  salvaRapporto(SPLIT_RAPPORTO_DEFAULT);
+}
+
+/** Collega il divisorio: trascinamento e doppio clic per riportarlo a metà. */
+function collegaSplitter() {
+  splitterEl = document.getElementById("list-splitter");
+  if (!splitterEl) return;
+  splitterEl.addEventListener("mousedown", avviaTrascinamentoSplit);
+  splitterEl.addEventListener("dblclick", (e) => {
+    e.preventDefault();
+    resettaSplit();
+  });
+  splitterEl.title = "Trascina per ridistribuire · doppio clic: metà";
 }
 
 /**
@@ -3466,6 +3579,7 @@ export async function boot() {
   accountEl = document.querySelector("#status-account");
   searchInput = document.querySelector("#search-input");
   collegaRicerca();
+  collegaSplitter();
 
   // Preferenze dell'utente (Milestone 8): tema, firma, assistente. Il tema lo
   // applica `initTheme`; qui si caricano le preferenze e si collegano le
