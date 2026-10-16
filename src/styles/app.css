@@ -542,17 +542,17 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 .compose-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, .45);
+  background: rgba(0, 0, 0, .3);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
 }
 .compose-window {
-  width: 1496px;
-  height: 878px;
-  max-width: calc(100vw - 24px);
-  max-height: calc(100vh - 24px);
+  width: 980px;
+  height: 740px;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100vh - 48px);
   background: var(--window-bg);
   color: var(--text-primary);
   display: flex;
@@ -565,27 +565,30 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 
 .compose-titlebar {
   flex: 0 0 auto;
-  height: var(--h-titlebar);
+  height: 40px;
   background: var(--chrome-bg);
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 0 12px;
   user-select: none;
+  cursor: grab;
 }
+.compose-titlebar--trascina { cursor: grabbing; }
 .compose-tb-title { flex: 1; text-align: center; font-weight: 600; }
 
 .compose-ribbon {
   flex: 0 0 auto;
-  height: var(--h-ribbon);
   background: var(--chrome-bg);
   border-bottom: 1px solid var(--list-header-sep);
-  padding: 0 16px 8px;
+  padding: 2px 16px 10px;
   display: flex;
   flex-direction: column;
 }
-.compose-tabs { height: 26px; display: flex; align-items: flex-end; gap: 22px; font-size: 12px; }
-.compose-groups { display: flex; align-items: flex-start; gap: 2px; margin-top: 8px; }
+.compose-tabs { display: flex; gap: 2px; align-self: flex-start; padding: 2px; background: var(--sidebar-sel-bg); border-radius: 8px; font-size: 11px; }
+.compose-tabs .tab { color: var(--text-secondary); padding: 3px 12px; border-radius: 6px; }
+.compose-tabs .tab--active { color: var(--text-primary); background: var(--row-sel-bg); font-weight: 600; }
+.compose-groups { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 2px; margin-top: 8px; }
 .compose-groups .rb { cursor: pointer; }
 .compose-groups .rb--invia { cursor: pointer; }
 .compose-groups .rb--invia .ic { color: var(--accent); font-size: 22px; }
@@ -617,23 +620,19 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 .cmp-menu-voce { display: block; width: 100%; text-align: left; font: inherit; padding: 4px 8px; border: 0; border-radius: 4px; background: transparent; color: var(--text-primary); cursor: pointer; }
 .cmp-menu-voce:hover { background: var(--row-sep); }
 
-.compose-fields { flex: 0 0 auto; padding: 4px 0 0; }
-.cmp-row { display: flex; align-items: center; height: 23px; }
-.cmp-row--cc, .cmp-row--oggetto { height: 22px; }
-.cmp-row--oggetto { margin-top: 4px; }
+.compose-fields { flex: 0 0 auto; padding: 8px 0 4px; }
+.cmp-row { display: grid; grid-template-columns: 78px minmax(0, 1fr) 40px; align-items: center; min-height: 32px; }
 .cmp-label {
-  width: 78px; text-align: right; padding-right: 10px;
-  font-size: 12px; color: var(--text-primary); flex: 0 0 auto;
+  text-align: right; padding-right: 10px;
+  font-size: 12px; color: var(--text-secondary);
 }
 .cmp-input {
-  flex: 1; height: 100%; border: 1px solid var(--campo-bordo);
+  box-sizing: border-box; width: 100%; height: 28px; border: 1px solid var(--campo-bordo); border-radius: 6px;
   background: var(--window-bg); color: var(--text-primary);
-  font: inherit; font-size: 12px; padding: 0 6px; outline: none;
+  font: inherit; font-size: 12px; padding: 0 10px; outline: none;
 }
-.cmp-row:not(.cmp-row--oggetto) .cmp-input { margin-right: 56px; }
-.cmp-row--oggetto .cmp-input { margin-right: 4px; }
-.cmp-input:focus { border: 2px solid var(--campo-focus); }
-.cmp-people { width: 46px; text-align: center; color: var(--text-secondary); flex: 0 0 auto; }
+.cmp-input:focus { border-color: var(--campo-focus); box-shadow: 0 0 0 1px var(--campo-focus); }
+.cmp-people { text-align: center; color: var(--text-secondary); }
 
 .compose-body {
   flex: 1; min-height: 0; overflow: auto;
@@ -1310,7 +1309,6 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 .mail-settings-win { width: 560px; }
 
 /* ---------- Rubrica dei contatti (blocco F) ---------- */
-.cmp-row--ccn { height: 22px; }
 
 .rubrica-overlay {
   position: fixed; inset: 0; z-index: 88;
