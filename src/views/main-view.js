@@ -5,7 +5,15 @@
  * milestone 4 il corpo arriverà dal fetch IMAP.
  */
 
-import { statoRiga, fugaHtml, htmlCelleMessaggio, NON_DISPONIBILI_V1, testoNonDisponibileRibbon } from "./mail-actions.js";
+import {
+  statoRiga,
+  fugaHtml,
+  htmlCelleMessaggio,
+  chiaveIconaCartella,
+  svgIconaCartella,
+  NON_DISPONIBILI_V1,
+  testoNonDisponibileRibbon,
+} from "./mail-actions.js";
 import { targhetteCategorie } from "./categorie.js";
 import { stileCarattere } from "./impostazioni-mail.js";
 import { limitaZoomLettura, ZOOM_LETTURA_MAX, ZOOM_LETTURA_MIN } from "./accessibilita.js";
@@ -450,7 +458,11 @@ export function renderSidebar(root, folders = sampleFolders) {
     ]
       .filter(Boolean)
       .join(" ");
-    const nodo = el("div", cls, `${prefix}${fugaHtml(nome)}${count}`);
+    const chiaveIcona = chiaveIconaCartella(f.cartella || nome);
+    const icona = group
+      ? ""
+      : `<span class="folder-ic" data-icona="${chiaveIcona}">${svgIconaCartella(chiaveIcona)}</span>`;
+    const nodo = el("div", cls, `${icona}${prefix}${fugaHtml(nome)}${count}`);
     nodo.dataset.cartella = f.cartella || nome;
     nodo.dataset.kind = f.kind || "child";
     if (f.account) nodo.dataset.account = f.account;

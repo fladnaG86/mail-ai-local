@@ -171,10 +171,12 @@ html[data-tauri] .titlebar { padding-left: 78px; }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.folder--child { padding-left: 26px; color: var(--text-secondary); border-top: 1px solid var(--sidebar-sep); }
-.folder--sel { padding-left: 26px; background: var(--sidebar-sel-bg); font-weight: 600; }
+.folder--child { padding-left: 26px; color: var(--text-secondary); }
+.folder--sel { padding-left: 26px; background: var(--sidebar-sel-bg); font-weight: 600; color: var(--text-primary); border-radius: 8px; margin: 0 6px; }
 .folder--group { border-top: 1px solid var(--sidebar-sep); margin-top: 8px; padding-top: 8px; }
 .folder .count { float: right; color: var(--text-secondary); }
+.folder .folder-ic { display: inline-block; width: 16px; height: 16px; margin-right: 8px; vertical-align: -3px; color: var(--text-secondary); }
+.folder--sel .folder-ic { color: var(--accent); }
 
 .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 

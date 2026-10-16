@@ -95,6 +95,34 @@ export function coloreAvatar(chiave) {
   return COLORI_AVATAR[h % COLORI_AVATAR.length];
 }
 
+/** Quale icona dare a una cartella, dal nome italiano o da quello del server. */
+export function chiaveIconaCartella(nome) {
+  const n = String(nome || "").toLowerCase();
+  if (/bozze|draft/.test(n)) return "bozze";
+  if (/inviat|sent/.test(n)) return "inviata";
+  if (/elimina|trash|cestin|deleted/.test(n)) return "cestino";
+  if (/archiv/.test(n)) return "archivio";
+  if (/indesider|spam|junk/.test(n)) return "indesiderata";
+  if (n === "inbox" || n === "posta in arrivo") return "arrivo";
+  return "cartella";
+}
+
+const DISEGNI_CARTELLA = {
+  arrivo: '<path d="M2 9l2-5h8l2 5v4H2z M2 9h4l1 2h2l1-2h4"/>',
+  bozze: '<path d="M3 13l1-3 7-7 2 2-7 7z M9.5 4.5l2 2"/>',
+  inviata: '<path d="M2 8l12-5-4 11-3-4z M7 10l7-7"/>',
+  cestino: '<path d="M3 4h10 M6 4V2.5h4V4 M4.5 4l.7 9h5.6l.7-9 M7 6.5v4 M9 6.5v4"/>',
+  archivio: '<path d="M2 3h12v3H2z M3 6v7h10V6 M6.5 9h3"/>',
+  indesiderata: '<circle cx="8" cy="8" r="5.5"/><path d="M4 4l8 8"/>',
+  cartella: '<path d="M2 4.5h4l1.5 1.5H14v7H2z"/>',
+};
+
+/** L'icona SVG (16px, tratto) di una cartella: prende il colore del testo. */
+export function svgIconaCartella(chiave) {
+  const disegno = DISEGNI_CARTELLA[chiave] || DISEGNI_CARTELLA.cartella;
+  return `<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${disegno}</svg>`;
+}
+
 /**
  * Le celle di una riga di messaggio — pallino, mittente con avatar, oggetto,
  * icone di stato, data, categorie — uguali per lista piatta, conversazioni e
