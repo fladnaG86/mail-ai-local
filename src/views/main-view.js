@@ -333,6 +333,7 @@ export function renderListaConversazioni(root, conversazioni = [], opzioni = {})
 // voci non disponibili nella v1 (vedi `NOMI_VOCI_V1`).
 const ribbonGroups = [
   { key: "mail-new", ic: "✎", lb: "Nuovo Messaggio" },
+  { key: "sync", ic: "↻", lb: "Invia e<br>ricevi" },
   { key: "new-items", ic: "📅", lb: "Nuovi<br>elementi" },
   { sep: true },
   { key: "delete", ic: "🗑", lb: "Elimina" },
@@ -359,7 +360,6 @@ const ribbonGroups = [
   { sep: true },
   { key: "contact", ic: "👤", lb: "Trova<br>contatto" },
   { key: "addressbook", ic: "📖", lb: "Rubrica" },
-  { key: "sync", ic: "↻", lb: "Invia e<br>ricevi" },
   { key: "settings", ic: "⚙️", lb: "Impostazioni…" },
   { sep: true },
   { key: "assistant", ic: "✦", lb: "Assistente", ai: true },
@@ -379,7 +379,7 @@ function el(tag, className, html) {
  */
 export const SCHEDE = {
   home: [
-    "mail-new", "new-items", "reply", "reply-all", "forward", "meeting", "attach",
+    "mail-new", "sync", "new-items", "reply", "reply-all", "forward", "meeting", "attach",
     "delete", "archive", "move", "junk", "read-unread", "categorize", "complete",
     "filter", "sort", "density", "assistant",
   ],

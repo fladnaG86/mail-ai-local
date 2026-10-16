@@ -1676,26 +1676,6 @@ function diagnosticaDiEsempio() {
  * scorciatoia ⌘, (standard macOS). La finestra Account del riferimento non è
  * ancora collegata: il riquadro "Account" lo dichiara.
  */
-/**
- * «Invia e ricevi» nella barra del titolo, come nel riferimento. È lo stesso
- * comando della voce del ribbon: una sola strada, un solo esito in barra di
- * stato. Mentre la sincronizzazione è in corso il pulsante è occupato, così un
- * doppio clic non ne lancia due.
- */
-function collegaInviaRicevi() {
-  const b = document.querySelector("#btn-invia-ricevi");
-  if (!b) return;
-  b.addEventListener("click", async () => {
-    if (b.getAttribute("aria-busy") === "true") return;
-    b.setAttribute("aria-busy", "true");
-    try {
-      await inviaERicevi();
-    } finally {
-      b.removeAttribute("aria-busy");
-    }
-  });
-}
-
 function collegaImpostazioni() {
   const aiuto = document.querySelector(".titlebar .help");
   if (aiuto) {
@@ -3614,8 +3594,12 @@ function ribbonAzione(azione, gruppo) {
       return apriRubricaUI({ focusRicerca: true });
     case "addressbook":
       return apriRubricaUI({});
-    case "sync":
-      return inviaERicevi();
+    case "sync": {
+      // Una sola sincronizzazione per volta: il pulsante resta in attesa finché finisce.
+      if (gruppo.classList.contains("rb--in-attesa")) return;
+      gruppo.classList.add("rb--in-attesa");
+      return inviaERicevi().finally(() => gruppo.classList.remove("rb--in-attesa"));
+    }
     case "settings":
       // «Impostazioni…» nella scheda Strumenti: la stessa finestra del «?» e di ⌘,.
       return apriImpostazioniUI();
@@ -3697,7 +3681,6 @@ export async function boot() {
   // Blocco I2: «Invia più tardi» programma l'invio (coda locale, app aperta).
   impostaPianificaInvio(pianificaInvio);
   collegaImpostazioni();
-  collegaInviaRicevi();
   collegaSchede();
 
   // Blocco I1: cartelle della barra laterale (preferite in alto), voci del

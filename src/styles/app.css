@@ -45,29 +45,6 @@ html, body {
    a sinistra invece di ridisegnarli. Nel browser (prove visive) non serve. */
 html[data-tauri] .titlebar { padding-left: 78px; }
 .titlebar-title { flex: 1; text-align: center; font-weight: 600; }
-/* «Invia e ricevi» nella barra del titolo, come nel riferimento. La barra
-   trascina la finestra (`-webkit-app-region: drag`): senza `no-drag` il clic
-   non arriverebbe al pulsante e resterebbe muto nell'app vera. Lo spaziatore a
-   destra ha la stessa larghezza, così il titolo resta centrato nella finestra. */
-.titlebar-btn {
-  width: 30px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
-  -webkit-app-region: no-drag;
-}
-.titlebar-btn:hover { background: var(--sidebar-sel-bg); color: var(--text-primary); }
-.titlebar-btn[aria-busy="true"] { opacity: 0.55; cursor: default; }
-.titlebar-spacer { width: 30px; flex: 0 0 auto; }
-
 /* ✕ delle finestre interne (composizione, impostazioni e i loro pannelli,
    rubrica, agenda…), in testa alla barra del titolo dove stavano i pallini
    finti dei semafori (rimossi). Discreta come gli altri pulsanti di barra:
