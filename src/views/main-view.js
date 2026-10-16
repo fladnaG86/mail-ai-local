@@ -5,7 +5,7 @@
  * milestone 4 il corpo arriverà dal fetch IMAP.
  */
 
-import { statoRiga, fugaHtml, NON_DISPONIBILI_V1, testoNonDisponibileRibbon } from "./mail-actions.js";
+import { statoRiga, fugaHtml, htmlCelleMessaggio, NON_DISPONIBILI_V1, testoNonDisponibileRibbon } from "./mail-actions.js";
 import { targhetteCategorie } from "./categorie.js";
 import { stileCarattere } from "./impostazioni-mail.js";
 import { limitaZoomLettura, ZOOM_LETTURA_MAX, ZOOM_LETTURA_MIN } from "./accessibilita.js";
@@ -242,7 +242,6 @@ export function renderListaConversazioni(root, conversazioni = [], opzioni = {})
 
     const nonLetti = Number(c.nonLetti) || 0;
     const classeNonLetto = nonLetti > 0 ? " row--nonletto" : "";
-    const pallino = nonLetti > 0 ? "▣" : "○";
     const anteprima = opzioni.anteprima ? testoAnteprima(c) : "";
     const prevHtml = anteprima ? `<span class="row-preview"> — ${fugaHtml(anteprima)}</span>` : "";
     const contatore =
@@ -251,14 +250,18 @@ export function renderListaConversazioni(root, conversazioni = [], opzioni = {})
         : "";
 
     const header = el("div", `row row--conv${classeNonLetto}`);
-    header.innerHTML = `
-      <span class="cell cell--flag conv-caret">${aperta ? "▾" : "▸"}</span>
-      <span class="cell cell--from">${fugaHtml(c.from)}</span>
-      <span class="cell cell--subject">${fugaHtml(c.subject)} ${contatore}${prevHtml}</span>
-      <span class="cell cell--date row-date">${c.date}</span>
-      <span class="cell cell--cat">${nonLetti > 0 ? `<span class="conv-nonletti">${nonLetti}</span>` : ""}</span>
-      <span class="cell cell--done">${c.has_attachments ? "📎" : ""}</span>
-      <span class="cell cell--flag">${nonLetti > 0 ? pallino : ""}</span>`;
+    header.innerHTML = htmlCelleMessaggio(
+      { from: c.from, subject: c.subject, date: c.date, has_attachments: c.has_attachments },
+      { nonLetto: nonLetti > 0, completato: false },
+      {
+        anteprimaHtml: ` ${contatore}${prevHtml}`,
+        targhette: nonLetti > 0 ? `<span class="conv-nonletti">${nonLetti}</span>` : "",
+      },
+    );
+    // Nella prima colonna l'intestazione porta la freccia che apre/chiude, non il pallino.
+    const colonnaFreccia = header.querySelector(".cell--dot");
+    colonnaFreccia.className = "cell cell--dot conv-caret";
+    colonnaFreccia.textContent = aperta ? "▾" : "▸";
 
     const figli = el("div", "conv-figli");
     figli.hidden = !aperta;
@@ -267,14 +270,9 @@ export function renderListaConversazioni(root, conversazioni = [], opzioni = {})
       const riga = document.createElement("div");
       riga.className = ["row", "row--msg", ...st.classi.slice(1)].join(" ");
       riga.dataset.uid = m.uid || "";
-      riga.innerHTML = `
-        <span class="cell cell--flag">${st.pallino}</span>
-        <span class="cell cell--from">${fugaHtml(m.from)}</span>
-        <span class="cell cell--subject">${fugaHtml(m.subject)}</span>
-        <span class="cell cell--date row-date">${m.date}</span>
-        <span class="cell cell--cat">${st.categorie.map((x) => `<span class="cat-tag">${fugaHtml(x)}</span>`).join("")}</span>
-        <span class="cell cell--done">${st.completato ? "✔" : ""}</span>
-        <span class="cell cell--flag">${st.bandiera}</span>`;
+      riga.innerHTML = htmlCelleMessaggio(m, st, {
+        targhette: st.categorie.map((x) => `<span class="cat-tag">${fugaHtml(x)}</span>`).join(""),
+      });
       riga.addEventListener("click", (e) => {
         e.stopPropagation();
         for (const r of root.querySelectorAll(".row")) r.classList.remove("row--sel");
@@ -552,14 +550,7 @@ export function renderList(root, messages = sampleMessages, opzioni = {}) {
     const prevHtml = anteprima
       ? `<span class="row-preview"> — ${fugaHtml(anteprima)}</span>`
       : "";
-    row.innerHTML = `
-      <span class="cell cell--flag">${st.pallino}</span>
-      <span class="cell cell--from">${m.from}</span>
-      <span class="cell cell--subject">${m.subject}${prevHtml}</span>
-      <span class="cell cell--date row-date">${m.date}</span>
-      <span class="cell cell--cat">${targhette}</span>
-      <span class="cell cell--done">${st.completato ? "✔" : ""}</span>
-      <span class="cell cell--flag">${st.bandiera}</span>`;
+    row.innerHTML = htmlCelleMessaggio(m, st, { anteprimaHtml: prevHtml, targhette });
     row.addEventListener("click", () => {
       for (const r of root.querySelectorAll(".row")) r.classList.remove("row--sel");
       row.classList.add("row--sel");

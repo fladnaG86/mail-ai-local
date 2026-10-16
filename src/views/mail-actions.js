@@ -67,6 +67,52 @@ export function filtra(messaggi, filtro = "tutti", adesso = Date.now()) {
   return (messaggi || []).filter((m) => passaFiltro(m, filtro, adesso));
 }
 
+/** «Nome <indirizzo>» come lo manda il kernel → nome e indirizzo (vuoto se manca). */
+export function nomeEmail(mittente) {
+  const s = String(mittente || "").trim();
+  const m = s.match(/^(.*?)\s*<([^<>]*)>\s*$/);
+  if (!m) return { nome: s, email: "" };
+  const nome = m[1].replace(/^"(.*)"$/, "$1").trim();
+  return nome ? { nome, email: m[2].trim() } : { nome: m[2].trim(), email: "" };
+}
+
+/** Le iniziali dell'avatar: due parole → due iniziali, una parola → due lettere. */
+export function inizialiAvatar(mittente) {
+  const { nome, email } = nomeEmail(mittente);
+  const base = (nome || email).split("@")[0];
+  const parole = base.split(/[^\p{L}]+/u).filter(Boolean);
+  if (parole.length >= 2) return (parole[0][0] + parole[1][0]).toUpperCase();
+  if (parole.length === 1) return parole[0].slice(0, 2).toUpperCase();
+  return "?";
+}
+
+const COLORI_AVATAR = ["#C2562B", "#B8860B", "#4E8F5B", "#2E8B8B", "#4A78B5", "#7A62B8", "#B0568A", "#7A8591"];
+
+/** Un colore stabile per mittente: lo stesso indirizzo ha sempre lo stesso avatar. */
+export function coloreAvatar(chiave) {
+  let h = 0;
+  for (const c of String(chiave || "")) h = (h * 31 + c.codePointAt(0)) >>> 0;
+  return COLORI_AVATAR[h % COLORI_AVATAR.length];
+}
+
+/**
+ * Le celle di una riga di messaggio — pallino, mittente con avatar, oggetto,
+ * icone di stato, data, categorie — uguali per lista piatta, conversazioni e
+ * ricerca. `st` è `statoRiga(m)`; `extra.anteprimaHtml` e `extra.targhette` sono
+ * HTML già fatto dal chiamante.
+ */
+export function htmlCelleMessaggio(m, st, extra = {}) {
+  const { nome, email } = nomeEmail(m.from);
+  const emailHtml = email ? `<span class="from-email">${fugaHtml(email)}</span>` : "";
+  return `
+      <span class="cell cell--dot"><span class="dot${st.nonLetto ? " dot--on" : ""}"></span></span>
+      <span class="cell cell--from"><span class="avatar" style="background:${coloreAvatar(email || nome)}">${fugaHtml(inizialiAvatar(m.from))}</span><span class="from-txt"><span class="from-nome">${fugaHtml(nome)}</span>${emailHtml}</span></span>
+      <span class="cell cell--subject">${fugaHtml(m.subject)}${extra.anteprimaHtml || ""}</span>
+      <span class="cell cell--icons">${st.completato ? '<span class="ic ic--done">✔</span>' : ""}${m.has_attachments ? '<span class="ic ic--att">📎</span>' : ""}<span class="ic ic--star${m.flagged ? " ic--on" : ""}">${m.flagged ? "★" : "☆"}</span></span>
+      <span class="cell cell--date row-date">${fugaHtml(m.date)}</span>
+      <span class="cell cell--cat">${extra.targhette || ""}</span>`;
+}
+
 /** Fuga dell'HTML dei valori che l'utente può scrivere (es. una categoria). */
 export function fugaHtml(s) {
   return String(s == null ? "" : s)

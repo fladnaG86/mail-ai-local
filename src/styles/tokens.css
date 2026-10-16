@@ -3,30 +3,36 @@
    CHIARO: misurato sul secondo screenshot.
    A: presente in Assets.car dell'app di riferimento · D: dedotto. */
 
+/* Aspetto «moderno» (dall'immagine di riferimento): scuro caldo, sidebar più
+   scura della lista, selezione color tabacco. I valori non sono più misurati
+   su Outlook: questa scelta sostituisce il layout fedele all'originale. */
 :root, :root[data-theme="dark"] {
-  --window-bg:        #1E1E1E;   /* M */
-  --chrome-bg:        #282828;   /* M — barra titolo, ribbon, barra di stato */
-  --sidebar-sel-bg:   #454646;   /* M */
-  --sidebar-sep:      #545454;   /* M */
-  --list-header-bg:   #303132;   /* M */
-  --list-header-sep:  #090909;   /* M */
-  --row-sep:          #464646;   /* M */
-  --row-sel-bg:       #102F79;   /* M (≈ #00307E A) */
-  --row-hover-bg:     #2E2E2E;   /* A */
-  --row-flagged-bg:   #464646;   /* A — MessageListFlaggedBackgroundColor (scuro) */
-  --group-row-bg:     #2B2B2B;   /* M */
-  --info-bar-bg:      #323232;   /* M */
-  --pane-sep:         #545454;   /* M — separatore lista / pannello lettura */
-  --btn-border:       #464646;   /* M */
-  --campo-bordo:      #353535;   /* M — bordo dei campi nella finestra di composizione */
-  --campo-focus:      #416D97;   /* M — anello di fuoco sul campo attivo */
+  --window-bg:        #2A2523;
+  --chrome-bg:        #312B28;   /* barra titolo, toolbar, barra di stato */
+  --sidebar-bg:       #231F1D;
+  --sidebar-sel-bg:   #463D38;
+  --sidebar-sep:      #3A332F;
+  --list-header-bg:   #2D2724;
+  --list-header-sep:  #1D1917;
+  --row-sep:          #342E2B;
+  --row-sel-bg:       #4A3F38;
+  --row-hover-bg:     #332D2A;
+  --row-flagged-bg:   #463D38;
+  --group-row-bg:     #2E2825;
+  --info-bar-bg:      #3A332F;
+  --pane-sep:         #3A332F;   /* separatore lista / pannello lettura */
+  --btn-border:       #463E39;
+  --campo-bordo:      #3C3531;
+  --campo-focus:      #416D97;
+  --scheda-bg:        #E9E8E6;   /* scheda chiara che regge il corpo del messaggio */
+  --scheda-testo:     #1E1E1E;
 
   --text-primary:     #E6E6E6;   /* M */
   --text-secondary:   #B3B3B3;   /* M */
   --text-placeholder: #919191;   /* A */
   --text-on-select:   #FFFFFF;   /* M */
 
-  --accent:           #4BA0FF;   /* M */
+  --accent:           #4F8EF7;   /* pallino non letto, selezione attiva */
   --accent-hover:     #0085F0;   /* A */
   --accent-pressed:   #004E8A;   /* A */
   --accent-disabled:  #3E6998;   /* A */
@@ -40,6 +46,9 @@
 
 :root[data-theme="light"] {
   --window-bg:        #FFFFFF;   /* M */
+  --sidebar-bg:       #F3F2F1;
+  --scheda-bg:        #F7F6F5;
+  --scheda-testo:     #242424;
   --chrome-bg:        #F5F5F5;   /* M */
   --sidebar-sel-bg:   #F3F2F1;   /* M */
   --sidebar-sep:      #E1DFDD;   /* M */
@@ -97,8 +106,8 @@
   --h-titlebar:       28px;
   --h-ribbon:        108px;
   --w-sidebar:       234px;
-  --h-list-head:      23px;
-  --h-row:            27px;
+  --h-list-head:      26px;
+  --h-row:            48px;
   --h-group-row:      22px;
   --h-info-bar:       20px;
   --h-statusbar:      26px;

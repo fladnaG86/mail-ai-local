@@ -158,7 +158,7 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 .sidebar {
   flex: 0 0 auto;
   width: var(--w-sidebar);
-  background: var(--window-bg);
+  background: var(--sidebar-bg, var(--window-bg));
   border-right: 1px solid var(--sidebar-sep);
   padding: 6px 0;
   overflow: hidden;
@@ -236,17 +236,19 @@ html[data-tauri] .titlebar { padding-left: 78px; }
   border-bottom: 1px solid var(--list-header-sep);
   display: flex;
   align-items: center;
-  padding: 0 4px;
+  padding: 0 10px;
   font-size: 11px;
   color: var(--text-secondary);
 }
 .col { padding-right: 10px; }
-.col--flag { width: 30px; }
-.col--from { width: 340px; }
-.col--subject { flex: 1; }
-.col--date { width: 210px; }
-.col--cat { width: 130px; }
-.col--raggruppa { margin-left: auto; padding-right: 0; }
+.col--flag { width: 28px; }
+.col--from { width: 280px; }
+.col--subject { flex: 1; min-width: 0; }
+.col--icons { width: 84px; }
+.col--date { width: 150px; }
+.col--cat { width: 110px; }
+.col--icons { display: flex; justify-content: flex-end; padding-right: 8px; }
+.col--icons .conv-toggle { font-size: 10px; padding: 1px 5px; white-space: nowrap; }
 .conv-toggle {
   font: inherit;
   font-size: 11px;
@@ -293,7 +295,7 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 }
 .conv-figli { background: rgba(127, 127, 127, 0.06); }
 .row--msg { padding-left: 22px; font-size: 11.5px; }
-.row--msg .cell--from { width: 320px; color: var(--text-secondary); }
+.row--msg .cell--from { width: 258px; }
 .conv--aperta > .row--conv { background: var(--row-hover-bg); }
 
 /* ---------- pannello Regole (blocco H) -------------------------------------- */
@@ -314,11 +316,12 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 #reg-form .settings-grid { margin-bottom: 4px; }
 
 .row {
-  height: var(--h-row);
+  height: calc(var(--h-row) - 4px);
+  margin: 2px 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   font-size: 12px;
-  border-bottom: 1px solid var(--row-sep);
   cursor: default;
 }
 .row:hover { background: var(--row-hover-bg); }
@@ -326,10 +329,26 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 .row--sel .row-date { color: inherit; opacity: .85; }
 .row .cell { padding-right: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell--flag { width: 30px; text-align: center; }
-.cell--from { width: 340px; }
-.cell--subject { flex: 1; }
-.cell--date { width: 210px; color: var(--text-secondary); }
-.cell--cat { width: 130px; }
+.cell--dot { width: 28px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding-right: 0; }
+.cell--from { width: 280px; flex: 0 0 auto; display: flex; align-items: center; gap: 10px; }
+.cell--subject { flex: 1; min-width: 0; }
+.cell--icons { width: 84px; flex: 0 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.cell--date { width: 150px; flex: 0 0 auto; color: var(--text-secondary); }
+.cell--cat { width: 110px; flex: 0 0 auto; }
+.dot { width: 9px; height: 9px; border-radius: 50%; }
+.dot--on { background: var(--accent); }
+.row .avatar { width: 32px; height: 32px; flex: 0 0 auto; font-size: 12px; }
+.from-txt { min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.from-nome, .from-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.from-email { font-size: 11px; color: var(--text-secondary); }
+.row--sel .from-email { color: inherit; opacity: .8; }
+.cell--icons .ic { font-size: 13px; color: var(--text-secondary); }
+.cell--icons .ic--done { color: var(--accent); }
+.cell--icons .ic--star:not(.ic--on) { opacity: .45; }
+.cell--icons .ic--on { color: #E5A50A; }
+.row--conv .ic--star { visibility: hidden; }
+.row--nonletto .cell--from .from-nome { font-weight: 700; }
+.row--nonletto .cell--from .from-email { font-weight: 400; }
 
 /* ---------- ricerca (blocco B): intestazione e righe dei risultati ---------- */
 .search-head {
@@ -433,7 +452,7 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 .ai-card .f { color: var(--ai-text-dim); font-size: 10px; margin-top: 4px; opacity: .85; }
 
 .mail-body { padding: 6px 16px 16px; font-size: 13px; line-height: 1.6; overflow: auto; }
-.mail-body iframe { width: 100%; border: 0; background: #fff; color: #000; }
+.mail-body iframe { width: 100%; border: 0; background: #fff; color: #000; border-radius: 10px; }
 
 /* ---------- corpo sanificato, immagini e allegati (Milestone 4) ---------- */
 .mail-body-tools {
@@ -1564,9 +1583,10 @@ html[data-tauri] .titlebar { padding-left: 78px; }
    --------------------------------------------------------------------------- */
 
 /* Densità di visualizzazione: cambia davvero l'altezza delle righe. */
-.list[data-densita="compatta"] .row { min-height: 20px; padding-top: 1px; padding-bottom: 1px; font-size: 12px; }
-.list[data-densita="accogliente"] .row { min-height: 28px; padding-top: 3px; padding-bottom: 3px; font-size: 13px; }
-.list[data-densita="spaziosa"] .row { min-height: 38px; padding-top: 8px; padding-bottom: 8px; font-size: 14px; }
+.list[data-densita="compatta"] .row { height: 32px; font-size: 12px; }
+.list[data-densita="compatta"] .from-email { display: none; }
+.list[data-densita="accogliente"] .row { font-size: 13px; }
+.list[data-densita="spaziosa"] .row { height: 58px; font-size: 14px; }
 .list[data-densita] .row-preview { font-size: 0.94em; }
 
 /* Modulo della ricerca avanzata. */
