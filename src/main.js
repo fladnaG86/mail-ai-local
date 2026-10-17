@@ -695,6 +695,25 @@ function annullaSegnaLettoAlPassaggio() {
 }
 
 /**
+ * Gli oggetti del modello attuale che rappresentano `messaggio`: stessa casella,
+ * cartella e UID. Durante l'attesa la lista può essersi ricaricata (una
+ * sincronizzazione crea oggetti nuovi), e segnare solo il vecchio lascerebbe in
+ * grassetto la riga che si vede.
+ */
+function copieCorrenti(messaggio) {
+  const stesso = (m) =>
+    m === messaggio ||
+    (!!m.uid &&
+      String(m.uid) === String(messaggio.uid) &&
+      (m.account || "") === (messaggio.account || "") &&
+      (m.folder || "") === (messaggio.folder || ""));
+  const copie = new Set([messaggio]);
+  for (const m of messaggiCorrenti) if (stesso(m)) copie.add(m);
+  for (const c of conversazioniCorrenti) for (const m of c.messaggi || []) if (stesso(m)) copie.add(m);
+  return [...copie];
+}
+
+/**
  * Il mouse è entrato nella riga di `messaggio`: se resta 1 secondo e il
  * messaggio non è letto, lo segna come letto (preferenza «al passaggio»). Un
  * solo timer alla volta: cambiare riga riparte da zero.
@@ -705,9 +724,10 @@ function programmaSegnaLettoAlPassaggio(messaggio) {
   timerPassaggio = setTimeout(async () => {
     timerPassaggio = null;
     if (!(await segnaLettoNelKernel(messaggio))) return;
-    messaggio.seen = true;
+    const copie = copieCorrenti(messaggio);
+    for (const m of copie) m.seen = true;
     ridisegna();
-    if (readingEl && messaggioCorrente === messaggio) renderLettura(readingEl, messaggio);
+    if (readingEl && copie.includes(messaggioCorrente)) renderLettura(readingEl, messaggioCorrente);
     stato("Messaggio segnato come letto.");
   }, PASSAGGIO_SEGNA_LETTO_MS);
 }

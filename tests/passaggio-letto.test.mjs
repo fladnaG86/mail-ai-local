@@ -206,3 +206,33 @@ test("nella vista a conversazioni la riga e l'intestazione perdono il grassetto"
     "l'intestazione della conversazione è rimasta in grassetto",
   );
 });
+
+/** Ricarica la lista come dopo una sincronizzazione: righe nuove, oggetti nuovi. */
+async function ricaricaLista(w) {
+  w.doc.querySelector("#sidebar").dispatchEvent(
+    new w.window_.CustomEvent("folder-selected", { detail: { account: ACCOUNT, cartella: "INBOX" } }),
+  );
+  for (let i = 0; i < 10; i++) await attendi();
+}
+
+test("se la lista si ricarica durante l'attesa, la riga nuova perde comunque il grassetto", async () => {
+  const w = await avvia({ preferenze: SENZA_CONVERSAZIONI });
+  evento(w, riga_(w, 1), "mouseenter");
+  await passa(w, 500);
+  await ricaricaLista(w);
+  assert.ok(riga_(w, 1).classList.contains("row--nonletto"), "premessa: la lista ricaricata mostra la riga non letta");
+  await passa(w, 500);
+  assert.equal(w.chiamate.length, 1);
+  assert.equal(riga_(w, 1).classList.contains("row--nonletto"), false, "la riga ricaricata è rimasta in grassetto");
+});
+
+test("nella vista a conversazioni, dopo una ricarica, perdono il grassetto riga e intestazione", async () => {
+  const w = await avvia({});
+  evento(w, w.doc.querySelector(".row--msg"), "mouseenter");
+  await passa(w, 500);
+  await ricaricaLista(w);
+  await passa(w, 500);
+  assert.equal(w.chiamate.length, 1);
+  assert.equal(w.doc.querySelector(".row--msg").classList.contains("row--nonletto"), false);
+  assert.equal(w.doc.querySelector(".row--conv").classList.contains("row--nonletto"), false);
+});
