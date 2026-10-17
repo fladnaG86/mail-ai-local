@@ -51,6 +51,7 @@ import {
   nonLettiDi,
   CARTELLA_POSTA_IN_ARRIVO,
 } from "./views/cartelle-account.js";
+import { creaAggiornaDock } from "./views/dock.js";
 import { apriPannelloNotifiche } from "./views/notifiche.js";
 import {
   apriAssistenteIA,
@@ -3031,7 +3032,12 @@ export function gruppiDiEsempio() {
 }
 
 /** Ridisegna la barra laterale dall'albero raggruppato per account (blocco J). */
+/** Blocco V1: il numero dei non letti sul Dock (manda al sistema solo i cambi). */
+const aggiornaDock = creaAggiornaDock();
+
 function disegnaSidebar() {
+  // Il Dock segue i conteggi anche se la barra laterale non c'è (es. nei test).
+  aggiornaDock(gruppiCartelle);
   const sidebar = document.querySelector("#sidebar");
   if (!sidebar) return;
   const nodi = alberoCartelle(gruppiCartelle, {
