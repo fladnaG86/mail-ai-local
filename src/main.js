@@ -1816,7 +1816,10 @@ function applicaCorpo(lettura, corpo, messaggio, conImmagini = false) {
   // Si conserva il corpo per i ridisegni sul posto del pannello: il modello del
   // messaggio non lo porta, e rileggerlo dal kernel a ogni ridisegno sarebbe una
   // chiamata di rete per un disegno.
-  corpoCorrente = { messaggio, html, allegati: corpo.attachments || [], conImmagini };
+  // Il kernel dice se ha bloccato immagini remote: se no (già consentite per
+  // questo messaggio, o non ce ne sono) non resta nulla da mostrare.
+  const nienteDaMostrare = corpo.immaginiBloccate === false;
+  corpoCorrente = { messaggio, html, allegati: corpo.attachments || [], conImmagini: conImmagini || nienteDaMostrare };
   mostraCorpoHtml(lettura, html, stileLetturaCorrente());
   mostraAllegati(lettura.allegati, corpo.attachments || [], (allegato, bottone, riga) =>
     salvaAllegato(messaggio, allegato, bottone, riga),
@@ -1833,6 +1836,11 @@ function applicaCorpo(lettura, corpo, messaggio, conImmagini = false) {
  */
 async function collegaImmagini(lettura, messaggio) {
   if (!lettura) return;
+  // Immagini già mostrate o nulla di bloccato: il pulsante non servirebbe.
+  if (corpoCorrente && corpoCorrente.messaggio === messaggio && corpoCorrente.conImmagini) {
+    lettura.btnImmagini.remove();
+    return;
+  }
   const politica = prefLettura().immagini;
   if (politica === "mai") {
     lettura.btnImmagini.remove();
@@ -1844,14 +1852,17 @@ async function collegaImmagini(lettura, messaggio) {
       uid: messaggio.uid,
       accountId: accountDi(messaggio),
     });
+    if (!conImmagini) return;
     applicaCorpo(lettura, conImmagini, messaggio, true);
+    lettura.btnImmagini.remove();
   };
   if (politica === "sempre") {
     lettura.btnImmagini.remove();
     await mostra();
     return;
   }
-  // "chiedi": consenso SOLO per questo messaggio (scelta non persistente).
+  // "chiedi": il consenso vale per questo messaggio e il kernel lo ricorda
+  // (riaprendolo il corpo arriva già con le immagini).
   lettura.btnImmagini.addEventListener("click", mostra);
 }
 

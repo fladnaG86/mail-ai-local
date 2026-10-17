@@ -904,6 +904,9 @@ pub struct MailBody {
     pub html: String,
     pub text: String,
     pub attachments: Vec<MailAttachmentInfo>,
+    /// Vero se nell'HTML sono state bloccate immagini remote: solo allora il
+    /// pannello propone «Mostra immagini».
+    pub immagini_bloccate: bool,
 }
 
 /// Metadati di un allegato, come mostrati sotto il corpo del messaggio.
@@ -973,7 +976,7 @@ async fn corpo_grezzo(folder: &str, uid: &str, account_id: Option<&str>) -> Resu
 /// Compone il corpo per l'interfaccia: parsing MIME, sanitizzazione dell'HTML e
 /// metadati degli allegati. Con `consenti_immagini` falso le immagini remote
 /// restano bloccate (segnaposto); con vero il browser può richiederle.
-fn componi_corpo(grezzo: &[u8], consenti_immagini: bool) -> MailBody {
+pub fn componi_corpo(grezzo: &[u8], consenti_immagini: bool) -> MailBody {
     let corpo = mail::mime::analizza(grezzo);
     let html = sanitize::sanifica(corpo.html.as_deref().unwrap_or(""), consenti_immagini);
     let attachments = corpo
@@ -987,33 +990,46 @@ fn componi_corpo(grezzo: &[u8], consenti_immagini: bool) -> MailBody {
             size: a.dimensione,
         })
         .collect();
+    let immagini_bloccate = !consenti_immagini && html.contains(sanitize::SEGNAPOSTO_IMMAGINE);
     MailBody {
         html,
         text: corpo.testo.unwrap_or_default(),
         attachments,
+        immagini_bloccate,
     }
 }
 
-/// Corpo del messaggio con le immagini remote **bloccate** (predefinito).
+/// Corpo del messaggio con le immagini remote **bloccate** (predefinito), a
+/// meno che per questo messaggio l'utente non abbia già scelto «Mostra
+/// immagini»: allora arrivano già consentite e il pulsante non si ripropone.
 #[tauri::command]
 async fn mail_body(
     folder: String,
     uid: String,
     account_id: Option<String>,
 ) -> Result<MailBody, String> {
-    let grezzo = corpo_grezzo(&folder, &uid, account_id.as_deref()).await?;
-    Ok(componi_corpo(&grezzo, false))
+    let account = account_per_id(account_id.as_deref())?;
+    let consentite = apri_cache()?
+        .immagini_consentite(&account.id, &folder, &uid)
+        .unwrap_or(false);
+    let grezzo = corpo_grezzo(&folder, &uid, Some(&account.id)).await?;
+    Ok(componi_corpo(&grezzo, consentite))
 }
 
 /// Corpo del messaggio con le immagini remote **consentite**, per il pulsante
-/// "Mostra immagini". La scelta vale solo per questa chiamata, non è persistente.
+/// "Mostra immagini". La scelta resta in cache per questo messaggio: riaprendolo
+/// le immagini si vedono subito, senza chiedere di nuovo.
 #[tauri::command]
 async fn mail_body_con_immagini(
     folder: String,
     uid: String,
     account_id: Option<String>,
 ) -> Result<MailBody, String> {
-    let grezzo = corpo_grezzo(&folder, &uid, account_id.as_deref()).await?;
+    let account = account_per_id(account_id.as_deref())?;
+    let grezzo = corpo_grezzo(&folder, &uid, Some(&account.id)).await?;
+    apri_cache()?
+        .consenti_immagini(&account.id, &folder, &uid)
+        .map_err(|e| e.to_string())?;
     Ok(componi_corpo(&grezzo, true))
 }
 

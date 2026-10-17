@@ -357,6 +357,7 @@ const COLONNE_AGGIUNTE: &[(&str, &str)] = &[
     ("references_hdr", "TEXT"),
     ("regole_applicate", "INTEGER DEFAULT 0"),
     ("scadenza", "TEXT"),
+    ("immagini_consentite", "INTEGER DEFAULT 0"),
 ];
 
 /// Colonne delle intestazioni, usate dalle query di lettura.
@@ -980,6 +981,33 @@ impl Store {
             params![account, folder, uid, letto],
         )?;
         Ok(())
+    }
+
+    /// Registra che l'utente ha scelto «Mostra immagini» per questo messaggio:
+    /// le volte successive il corpo arriva già con le immagini e il pulsante
+    /// non si ripropone. Una riga assente dalla cache non è un errore.
+    pub fn consenti_immagini(&self, account: &str, folder: &str, uid: &str) -> Result<()> {
+        self.conn.execute(
+            "UPDATE messages SET immagini_consentite = 1 \
+             WHERE COALESCE(account, '') = ?1 AND folder = ?2 AND uid = ?3",
+            params![account, folder, uid],
+        )?;
+        Ok(())
+    }
+
+    /// Vero se per questo messaggio le immagini remote sono già state consentite.
+    pub fn immagini_consentite(&self, account: &str, folder: &str, uid: &str) -> Result<bool> {
+        let valore: Option<i64> = self
+            .conn
+            .query_row(
+                "SELECT immagini_consentite FROM messages \
+                 WHERE COALESCE(account, '') = ?1 AND folder = ?2 AND uid = ?3",
+                params![account, folder, uid],
+                |row| row.get(0),
+            )
+            .optional()?
+            .flatten();
+        Ok(valore.unwrap_or(0) != 0)
     }
 
     /// Imposta il contrassegno (`\Flagged`) della riga in cache (per account).
