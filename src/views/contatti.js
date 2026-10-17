@@ -691,7 +691,10 @@ export function testoImportazione(esito) {
   if (!esito || typeof esito !== "object") return "Importazione completata.";
   const pezzi = [`${esito.importati || 0} aggiunti`, `${esito.aggiornati || 0} aggiornati`];
   if (esito.senzaEmail) pezzi.push(`${esito.senzaEmail} scartati (senza indirizzo)`);
+  const conflitti = Array.isArray(esito.conflitti) ? esito.conflitti : [];
+  if (conflitti.length) pezzi.push(`${conflitti.length} saltati (indirizzo già di un altro contatto)`);
   let testo = `Importazione: ${pezzi.join(", ")}.`;
+  if (conflitti.length) testo += ` Saltati: ${conflitti.join("; ")}.`;
   if (Array.isArray(esito.ignorati) && esito.ignorati.length) {
     testo += ` Campi non supportati e ignorati: ${esito.ignorati.join(", ")}.`;
   }

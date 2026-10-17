@@ -150,6 +150,9 @@ pub struct EsitoImport {
     pub senza_email: usize,
     /// Proprietà vCard incontrate ma non lette (dichiarate, mai inventate).
     pub ignorati: Vec<String>,
+    /// Blocco U: schede saltate perché un loro indirizzo è già di un altro
+    /// contatto («indirizzo: motivo»). Le altre schede entrano comunque.
+    pub conflitti: Vec<String>,
 }
 
 /// Un contatto suggerito per il completamento dei destinatari.
@@ -253,11 +256,26 @@ pub fn esporta_vcard(contatti: &[Contatto]) -> String {
             "EMAIL;TYPE=INTERNET:{}\r\n",
             sfuggi(c.email.trim())
         ));
+        for r in &c.email_altre {
+            let tipo = tipo_vcard(&r.etichetta).map(|t| format!(",{t}")).unwrap_or_default();
+            out.push_str(&format!("EMAIL;TYPE=INTERNET{tipo}:{}\r\n", sfuggi(r.valore.trim())));
+        }
         if !c.telefono.trim().is_empty() {
             out.push_str(&format!("TEL;TYPE=CELL:{}\r\n", sfuggi(c.telefono.trim())));
         }
+        for r in &c.telefoni {
+            let tipo = tipo_vcard(&r.etichetta).map(|t| format!(";TYPE={t}")).unwrap_or_default();
+            out.push_str(&format!("TEL{tipo}:{}\r\n", sfuggi(r.valore.trim())));
+        }
         if !c.azienda.trim().is_empty() {
             out.push_str(&format!("ORG:{}\r\n", sfuggi(c.azienda.trim())));
+        }
+        if !c.ruolo.trim().is_empty() {
+            out.push_str(&format!("TITLE:{}\r\n", sfuggi(c.ruolo.trim())));
+        }
+        if !c.indirizzo.trim().is_empty() {
+            // L'indirizzo è testo libero: va tutto nel campo «via» di ADR.
+            out.push_str(&format!("ADR:;;{};;;;\r\n", sfuggi(c.indirizzo.trim())));
         }
         if !c.note.trim().is_empty() {
             out.push_str(&format!("NOTE:{}\r\n", sfuggi(c.note.trim())));
@@ -305,21 +323,78 @@ fn srotola(testo: &str) -> Vec<String> {
     righe
 }
 
-/// Nome della proprietà e valore di una riga `NOME;parametri:valore`.
-/// Il prefisso di gruppo (`item1.EMAIL`) è tolto; i parametri (`;TYPE=…`) pure.
-fn proprieta(riga: &str) -> Option<(String, String)> {
+/// Nome della proprietà, etichetta e valore di una riga `NOME;parametri:valore`.
+/// Il prefisso di gruppo (`item1.EMAIL`) è tolto; dai parametri si ricava
+/// l'etichetta (`TYPE=WORK` → «lavoro», vedi `etichetta_da_tipi`).
+fn proprieta(riga: &str) -> Option<(String, String, String)> {
     let (nome_con_param, valore) = riga.split_once(':')?;
-    let senza_gruppo = nome_con_param.rsplit('.').next().unwrap_or("");
-    let nome = senza_gruppo
-        .split(';')
-        .next()
-        .unwrap_or("")
-        .trim()
-        .to_ascii_uppercase();
+    let senza_gruppo = match nome_con_param.split_once(';') {
+        Some((nome, param)) => format!("{};{param}", nome.rsplit('.').next().unwrap_or("")),
+        None => nome_con_param.rsplit('.').next().unwrap_or("").to_string(),
+    };
+    let mut pezzi = senza_gruppo.split(';');
+    let nome = pezzi.next().unwrap_or("").trim().to_ascii_uppercase();
     if nome.is_empty() {
         return None;
     }
-    Some((nome, valore.to_string()))
+    // TYPE=a,b ; TYPE=c ; oppure parametri «nudi» (vCard 2.1: `EMAIL;WORK`).
+    let mut tipi: Vec<String> = Vec::new();
+    for p in pezzi {
+        let valori = match p.split_once('=') {
+            Some((k, v)) if k.trim().eq_ignore_ascii_case("TYPE") => v,
+            Some(_) => continue,
+            None => p,
+        };
+        tipi.extend(valori.split(',').map(|t| t.trim().trim_matches('"').to_ascii_lowercase()));
+    }
+    Some((nome, etichetta_da_tipi(&tipi), valore.to_string()))
+}
+
+/// Etichette italiane dei TYPE vCard più comuni, in entrambe le direzioni.
+const ETICHETTE_VCARD: &[(&str, &str)] = &[
+    ("work", "lavoro"),
+    ("home", "casa"),
+    ("cell", "cellulare"),
+    ("fax", "fax"),
+    ("other", "altro"),
+];
+
+/// L'etichetta di un recapito dai suoi TYPE. Quelli che non dicono *quale*
+/// recapito è (`internet`, `pref`, `voice`…) non contano; un TYPE sconosciuto
+/// (o `x-qualcosa`) diventa l'etichetta così com'è.
+fn etichetta_da_tipi(tipi: &[String]) -> String {
+    const NEUTRI: &[&str] = &["internet", "pref", "voice", "text", "msg", "x400", ""];
+    for t in tipi {
+        if NEUTRI.contains(&t.as_str()) {
+            continue;
+        }
+        let t = match t.as_str() {
+            "mobile" | "iphone" => "cell",
+            altro => altro,
+        };
+        if let Some((_, it)) = ETICHETTE_VCARD.iter().find(|(v, _)| *v == t) {
+            return it.to_string();
+        }
+        return t.strip_prefix("x-").unwrap_or(t).replace('-', " ");
+    }
+    String::new()
+}
+
+/// Il TYPE vCard di un'etichetta (inverso di `etichetta_da_tipi`): `None` se
+/// l'etichetta è vuota; un'etichetta libera diventa `x-…`.
+fn tipo_vcard(etichetta: &str) -> Option<String> {
+    let e = etichetta.trim().to_lowercase();
+    if e.is_empty() {
+        return None;
+    }
+    if let Some((v, _)) = ETICHETTE_VCARD.iter().find(|(_, it)| *it == e) {
+        return Some(v.to_ascii_uppercase());
+    }
+    let pulita: String = e
+        .chars()
+        .map(|c| if c.is_alphanumeric() { c } else { '-' })
+        .collect();
+    Some(format!("x-{pulita}"))
 }
 
 /// Legge un testo vCard (una o più schede). Le schede senza email sono contate
@@ -327,11 +402,11 @@ fn proprieta(riga: &str) -> Option<(String, String)> {
 pub fn importa_vcard(testo: &str) -> EsitoParse {
     let righe = srotola(testo);
     let mut schede: Vec<SchedaVcard> = Vec::new();
-    let mut corrente: Vec<(String, String)> = Vec::new();
+    let mut corrente: Vec<(String, String, String)> = Vec::new();
     let mut dentro = false;
 
     for riga in &righe {
-        let (nome, valore) = match proprieta(riga) {
+        let (nome, etichetta, valore) = match proprieta(riga) {
             Some(p) => p,
             None => continue,
         };
@@ -350,7 +425,7 @@ pub fn importa_vcard(testo: &str) -> EsitoParse {
                 }
             }
             "_" => {}
-            _ if dentro => corrente.push((nome, valore)),
+            _ if dentro => corrente.push((nome, etichetta, valore)),
             _ => {}
         }
     }
@@ -381,7 +456,7 @@ pub fn importa_vcard(testo: &str) -> EsitoParse {
 }
 
 /// Costruisce una scheda dalle proprietà raccolte fra `BEGIN` e `END`.
-fn scheda_da(prop: &[(String, String)]) -> SchedaVcard {
+fn scheda_da(prop: &[(String, String, String)]) -> SchedaVcard {
     let mut c = Contatto {
         id: None,
         nome: String::new(),
@@ -397,7 +472,11 @@ fn scheda_da(prop: &[(String, String)]) -> SchedaVcard {
     let mut fn_ = String::new();
     let mut ignorati: Vec<String> = Vec::new();
 
-    for (nome, valore) in prop {
+    for (nome, etichetta, valore) in prop {
+        let recapito = || Recapito {
+            etichetta: etichetta.clone(),
+            valore: desfuggi(valore).trim().to_string(),
+        };
         match nome.as_str() {
             "N" => {
                 let pezzi = dividi_valore(valore);
@@ -406,9 +485,22 @@ fn scheda_da(prop: &[(String, String)]) -> SchedaVcard {
             }
             "FN" => fn_ = desfuggi(valore).trim().to_string(),
             "EMAIL" if c.email.is_empty() => c.email = desfuggi(valore).trim().to_string(),
-            "EMAIL" => {}
+            // Blocco U: le email e i telefoni dopo il primo, con l'etichetta.
+            "EMAIL" => c.email_altre.push(recapito()),
             "TEL" if c.telefono.is_empty() => c.telefono = desfuggi(valore).trim().to_string(),
-            "TEL" => {}
+            "TEL" => c.telefoni.push(recapito()),
+            "TITLE" if c.ruolo.is_empty() => c.ruolo = desfuggi(valore).trim().to_string(),
+            "TITLE" => {}
+            "ADR" if c.indirizzo.is_empty() => {
+                // ADR: casella;esteso;via;città;provincia;CAP;paese → testo unico.
+                c.indirizzo = dividi_valore(valore)
+                    .into_iter()
+                    .map(|p| p.trim().to_string())
+                    .filter(|p| !p.is_empty())
+                    .collect::<Vec<_>>()
+                    .join(", ");
+            }
+            "ADR" => {}
             "ORG" if c.azienda.is_empty() => {
                 // ORG può essere un elenco separato da `;`: si prende il primo.
                 c.azienda = dividi_valore(valore)
@@ -491,6 +583,21 @@ pub fn suggerisci_da(
                 origine: "rubrica".to_string(),
             },
         ));
+        // Blocco U: anche le email «altre», col nome del contatto.
+        for r in &c.email_altre {
+            let altra = r.valore.trim().to_ascii_lowercase();
+            if altra.is_empty() || per_email.iter().any(|(e, _)| *e == altra) {
+                continue;
+            }
+            per_email.push((
+                altra.clone(),
+                Suggerimento {
+                    nome: c.nome_visualizzato(),
+                    email: altra,
+                    origine: "rubrica".to_string(),
+                },
+            ));
+        }
     }
     for grezzo in cache {
         let indirizzo = match estrai_indirizzo(grezzo) {
@@ -610,7 +717,9 @@ mod tests {
         assert_eq!(c.cognome, "Rossi");
         assert_eq!(c.email, "mario@example.it");
         assert!(esito.ignorati.contains(&"BDAY".to_string()));
-        assert!(esito.ignorati.contains(&"ADR".to_string()));
+        // Blocco U: ADR non è più ignorato, diventa l'indirizzo.
+        assert!(!esito.ignorati.contains(&"ADR".to_string()));
+        assert_eq!(c.indirizzo, "Via Roma 1, Torino, 10100, Italia");
         assert!(esito.ignorati.contains(&"X-CUSTOM".to_string()));
         // VERSION non è "ignorato": è noto ma non mappato su un campo.
         assert!(!esito.ignorati.contains(&"VERSION".to_string()));

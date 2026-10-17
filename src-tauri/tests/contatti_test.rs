@@ -185,7 +185,9 @@ fn le_proprieta_vcard_sconosciute_non_perdono_i_dati_noti_e_si_dichiarano() {
     assert_eq!(c.azienda, "Acme");
     assert_eq!(c.note, "ciao");
     assert!(parse.ignorati.contains(&"BDAY".to_string()));
-    assert!(parse.ignorati.contains(&"ADR".to_string()));
+    // Blocco U: ADR non è più ignorato, diventa l'indirizzo.
+    assert!(!parse.ignorati.contains(&"ADR".to_string()));
+    assert_eq!(c.indirizzo, "Via Roma 1, Torino, 10100, Italia");
     assert!(parse.ignorati.contains(&"X-CUSTOM".to_string()));
 }
 

@@ -120,3 +120,13 @@ test("il testo dell'importazione dichiara i campi ignorati", () => {
   assert.match(t, /1 scartati/);
   assert.match(t, /ADR, BDAY/);
 });
+
+test("il riepilogo dell'importazione dichiara le schede saltate per conflitto (blocco U)", () => {
+  const t = testoImportazione({
+    importati: 2,
+    aggiornati: 0,
+    conflitti: ["marco@esempiohost.it: l'indirizzo luca@esempiohost.it è già del contatto «Luca Bianchi»"],
+  });
+  assert.match(t, /1 saltati/);
+  assert.match(t, /marco@esempiohost\.it/);
+});

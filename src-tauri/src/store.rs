@@ -1446,7 +1446,14 @@ impl Store {
         let adesso = adesso_unix();
 
         let altre = normalizza_email_altre(&c.email_altre, &email);
-        let telefoni = normalizza_telefoni(&c.telefoni);
+        let mut telefoni = normalizza_telefoni(&c.telefoni);
+        // Senza telefono principale, il primo degli altri lo diventa: così la
+        // scheda resta la stessa anche dopo un giro in vCard.
+        let mut c = c.clone();
+        if c.telefono.trim().is_empty() && !telefoni.is_empty() {
+            c.telefono = telefoni.remove(0).valore;
+        }
+        let c = &c;
 
         if let Some(id) = c.id {
             let esiste: Option<i64> = self

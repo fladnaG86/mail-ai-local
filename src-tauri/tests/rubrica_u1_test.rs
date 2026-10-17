@@ -158,6 +158,24 @@ fn l_origine_automatica_si_ricorda_e_un_salvataggio_a_mano_la_toglie() {
 }
 
 #[test]
+fn senza_telefono_principale_il_primo_degli_altri_lo_diventa() {
+    let dir = tempdir().unwrap();
+    let store = Store::open(&dir.path().join("cache.db")).unwrap();
+    let (id, _) = salva(
+        &store,
+        &Contatto {
+            email: "luca@esempiohost.it".into(),
+            telefoni: vec![recapito("lavoro", "+39 02 1234"), recapito("fax", "+39 02 9999")],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let c = leggi(&store, id);
+    assert_eq!(c.telefono, "+39 02 1234");
+    assert_eq!(c.telefoni, vec![recapito("fax", "+39 02 9999")]);
+}
+
+#[test]
 fn il_contatto_viaggia_in_camel_case_verso_l_interfaccia() {
     let c = Contatto { email_altre: vec![recapito("casa", "a@b.it")], ..Default::default() };
     let json = serde_json::to_value(&c).unwrap();

@@ -2578,9 +2578,18 @@ pub fn contatti_importa_vcard_in(
     let parse = contatti::importa_vcard(testo);
     let mut importati = 0usize;
     let mut aggiornati = 0usize;
+    let mut conflitti: Vec<String> = Vec::new();
     for scheda in &parse.schede {
         let input: store::ContattoInput = (&scheda.contatto).into();
-        let (_id, agg) = cache.contatto_salva(&input).map_err(|e| e.to_string())?;
+        // Un indirizzo già di un altro contatto salta solo quella scheda.
+        let (_id, agg) = match cache.contatto_salva(&input) {
+            Ok(esito) => esito,
+            Err(store::StoreError::Contatto(motivo)) => {
+                conflitti.push(format!("{}: {motivo}", scheda.contatto.email.trim()));
+                continue;
+            }
+            Err(e) => return Err(e.to_string()),
+        };
         if agg {
             aggiornati += 1;
         } else {
@@ -2593,6 +2602,7 @@ pub fn contatti_importa_vcard_in(
         aggiornati,
         senza_email: parse.senza_email,
         ignorati: parse.ignorati,
+        conflitti,
     })
 }
 
