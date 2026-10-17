@@ -71,6 +71,63 @@ export const COLORI_EVIDENZIAZIONE = [
   { etichetta: "Nessuno", valore: "" },
 ];
 
+/**
+ * Vero se `nodo` (dentro `radice`, il corpo del messaggio) è evidenziato: il
+ * primo antenato con uno sfondo dichiarato decide, così uno sfondo trasparente
+ * più interno annulla quello colorato esterno. Serve a 🖍 per fare da
+ * interruttore: sul testo evidenziato toglie, altrove mette.
+ */
+export function evidenziazioneAttiva(nodo, radice) {
+  return !!elementoEvidenziato(nodo, radice);
+}
+
+/** L'antenato di `nodo` che lo evidenzia (vedi `evidenziazioneAttiva`), o null. */
+function elementoEvidenziato(nodo, radice) {
+  let el = nodo && nodo.nodeType === 1 ? nodo : nodo && nodo.parentElement;
+  while (el && el !== radice && radice && radice.contains(el)) {
+    if (el.tagName === "MARK") return el;
+    const sfondo = (el.style && el.style.backgroundColor) || "";
+    if (sfondo) return /^(transparent|initial|inherit|rgba\(0,\s*0,\s*0,\s*0\))$/i.test(sfondo.trim()) ? null : el;
+    el = el.parentElement;
+  }
+  return null;
+}
+
+/**
+ * Col cursore (nessuna selezione) dentro il testo evidenziato, porta il cursore
+ * fuori dall'evidenziazione: spezza l'elemento evidenziato nel punto del cursore
+ * e mette il cursore fra le due metà, così il testo scritto dopo non è più
+ * evidenziato e quello già scritto resta com'era. `hiliteColor transparent` da
+ * solo non basta: il motore di editing riporta il cursore dentro lo span. Per
+ * lo stesso motivo il cursore sta dopo uno spazio a larghezza zero (U+200B) in
+ * un nodo di testo suo. Vero se ha agito.
+ */
+export function esciDallEvidenziazione(selezione, radice) {
+  if (!selezione || !selezione.rangeCount || !selezione.isCollapsed) return false;
+  const evidenziato = elementoEvidenziato(selezione.anchorNode, radice);
+  if (!evidenziato) return false;
+  const doc = evidenziato.ownerDocument;
+  const punto = selezione.getRangeAt(0);
+  // La parte dopo il cursore va in una copia dell'elemento, subito dopo.
+  const coda = doc.createRange();
+  coda.setStart(punto.startContainer, punto.startOffset);
+  coda.setEndAfter(evidenziato.lastChild || evidenziato);
+  const resto = coda.extractContents();
+  if (resto.textContent) {
+    const seconda = evidenziato.cloneNode(false);
+    seconda.append(resto);
+    evidenziato.after(seconda);
+  }
+  const libero = doc.createTextNode("​");
+  evidenziato.after(libero);
+  const cursore = doc.createRange();
+  cursore.setStart(libero, 1);
+  cursore.collapse(true);
+  selezione.removeAllRanges();
+  selezione.addRange(cursore);
+  return true;
+}
+
 /** Dimensione approssimata di un messaggio per l'ordinamento per dimensione. */
 export function dimensioneDi(m) {
   if (!m) return 0;

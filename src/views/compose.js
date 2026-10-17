@@ -39,6 +39,8 @@ import { collegaCampoDestinatario, normSuggerimentiLimite } from "./contatti.js"
 import {
   markupFormattazione,
   COLORI_EVIDENZIAZIONE,
+  evidenziazioneAttiva,
+  esciDallEvidenziazione,
   stileZoom,
   etichettaRitardo,
   valoreDatetimeLocal,
@@ -1366,7 +1368,15 @@ function applicaFormattazione(overlay, comando, colore) {
   const selezionato = sel ? sel.toString() : "";
   const html = markupFormattazione(comando, selezionato, colore);
   try {
-    if (selezionato && html != null) {
+    if (comando === "evidenzia") {
+      // Interruttore, come in Outlook: sul testo già evidenziato (o col cursore
+      // dentro) si toglie, altrove si mette. Comando nativo in entrambi i casi:
+      // tiene grassetto e corsivo della selezione e, senza selezione, vale per
+      // il testo che si scrive dopo.
+      const attiva = evidenziazioneAttiva(sel && sel.anchorNode, corpoEl);
+      if (!attiva) document.execCommand("hiliteColor", false, colore || "transparent");
+      else if (!esciDallEvidenziazione(sel, corpoEl)) document.execCommand("hiliteColor", false, "transparent");
+    } else if (selezionato && html != null) {
       document.execCommand("insertHTML", false, html);
     } else if (comando === "testo_normale") {
       document.execCommand("fontName", false, prefsComposizione.carattereFamiglia);
