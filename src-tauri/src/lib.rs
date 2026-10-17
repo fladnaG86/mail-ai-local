@@ -2,6 +2,7 @@
 //! Ogni modulo espone funzioni testabili senza Tauri; i comandi IPC sono sottili.
 
 pub mod ai;
+pub mod aperture;
 pub mod composizione;
 pub mod conferme;
 pub mod config;
@@ -3632,11 +3633,19 @@ async fn diagnostica_smtp(
     .await)
 }
 
+/// Blocco V: ritira le aperture arrivate dall'esterno (link `mailto:`), in ordine.
+/// L'interfaccia la chiama all'avvio e a ogni evento `aperture-esterne`.
+#[tauri::command]
+fn aperture_in_attesa(coda: tauri::State<'_, aperture::Coda>) -> Vec<aperture::Apertura> {
+    coda.svuota()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
+        .manage(aperture::Coda::default())
         .setup(|app| {
             // Blocco I2: avvia il pianificatore degli invii programmati. Gira
             // mentre l'app è aperta; un invio dovuto parte entro ~30 secondi.
@@ -3742,10 +3751,36 @@ pub fn run() {
             composizione_formatta,
             scelte_rapide,
             diagnostica_account,
-            diagnostica_smtp
+            diagnostica_smtp,
+            aperture_in_attesa
         ])
-        .run(tauri::generate_context!())
-        .expect("errore nell'avvio dell'applicazione");
+        .build(tauri::generate_context!())
+        .expect("errore nell'avvio dell'applicazione")
+        .run(|app, evento| {
+            // Blocco V: link `mailto:` mandati da altre app. Arrivano anche prima
+            // che l'interfaccia ascolti: si accodano e l'evento è solo un avviso.
+            #[cfg(any(target_os = "macos", target_os = "ios"))]
+            if let tauri::RunEvent::Opened { urls } = evento {
+                let coda = app.state::<aperture::Coda>();
+                let mut nuove = false;
+                for url in &urls {
+                    if let Some(a) = aperture::classifica(url.as_str()) {
+                        coda.metti(a);
+                        nuove = true;
+                    }
+                }
+                if nuove {
+                    if let Some(finestra) = app.get_webview_window("main") {
+                        let _ = finestra.unminimize();
+                        let _ = finestra.show();
+                        let _ = finestra.set_focus();
+                    }
+                    let _ = app.emit(aperture::EVENTO_APERTURE, ());
+                }
+            }
+            #[cfg(not(any(target_os = "macos", target_os = "ios")))]
+            let _ = (app, evento);
+        });
 }
 
 // ---------------------------------------------------------------------------

@@ -52,6 +52,7 @@ import {
   CARTELLA_POSTA_IN_ARRIVO,
 } from "./views/cartelle-account.js";
 import { creaAggiornaDock } from "./views/dock.js";
+import { analizzaMailto, EVENTO_APERTURE } from "./views/apertura-esterna.js";
 import { apriPannelloNotifiche } from "./views/notifiche.js";
 import {
   apriAssistenteIA,
@@ -3629,6 +3630,43 @@ function collegaAvanzamentoSync() {
   });
 }
 
+/**
+ * Blocco V2: ritira dal kernel le aperture arrivate dall'esterno e le esegue.
+ * Un `mailto:` apre la composizione già compilata (mai invio automatico).
+ */
+async function ritiraAperture() {
+  let elenco = [];
+  try {
+    elenco = await window.__TAURI__.core.invoke("aperture_in_attesa");
+  } catch {
+    return;
+  }
+  for (const apertura of Array.isArray(elenco) ? elenco : []) {
+    if (!apertura || apertura.tipo !== "mailto") continue;
+    const campi = analizzaMailto(apertura.url);
+    if (!campi) continue;
+    apriComposizione({
+      ...campi,
+      mittente: await mittenteAccount(),
+      onInvia: inviaConKernel,
+      onControllo: controlloPreInvio,
+    });
+  }
+}
+
+/**
+ * Collega le aperture dall'esterno: l'evento del kernel è solo un avviso, si
+ * ritira sempre dalla coda — anche subito, per il link che ha lanciato l'app.
+ */
+function collegaApertureEsterne() {
+  if (!dentroTauri()) return;
+  const eventi = window.__TAURI__.event;
+  if (eventi && typeof eventi.listen === "function") {
+    eventi.listen(EVENTO_APERTURE, () => ritiraAperture());
+  }
+  ritiraAperture();
+}
+
 /** Nel browser non c'è kernel: la barra scorre su cartelle d'esempio, per la prova visiva. */
 async function avanzamentoDiProva() {
   const cartelle = ["INBOX", "Posta inviata", "Bozze", "Archivio"];
@@ -3851,6 +3889,10 @@ export async function boot() {
   await caricaConversazioniIgnorate();
   // Dalla cache: all'avvio la rete non deve ritardare la prima schermata.
   await caricaCartelle({ soloCache: true });
+
+  // Blocco V2: link `mailto:` da altre app (anche quello che ha lanciato l'app).
+  // Dopo le preferenze, così la composizione nasce con firma e carattere giusti.
+  collegaApertureEsterne();
 
   // Aggancio per le prove visive: ?view=account apre la finestra Account con
   // due caselle di esempio (blocco J), per confrontarla col mockup misurato

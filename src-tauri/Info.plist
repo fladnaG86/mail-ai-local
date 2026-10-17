@@ -5,5 +5,18 @@
   <!-- Blocco U6: testo della richiesta di macOS quando la rubrica importa dai Contatti. -->
   <key>NSAppleEventsUsageDescription</key>
   <string>Outlook AI legge le schede dell'app Contatti solo quando scegli «Importa da Contatti di macOS» nella rubrica.</string>
+  <!-- Blocco V2: l'app accetta i link mailto: (come Outlook). Per farne il client
+       predefinito: Mail → Impostazioni → Generali → «App e-mail predefinita». -->
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>Indirizzo e-mail</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>mailto</string>
+      </array>
+    </dict>
+  </array>
 </dict>
 </plist>
