@@ -2042,15 +2042,12 @@ async fn cartella_rinomina(
     account_id: Option<String>,
 ) -> Result<String, String> {
     let (account, sorgente) = sorgente_imap_per(account_id.as_deref())?;
-    mail::ops::server_rinomina_cartella(&sorgente, &vecchio, &nuovo).await?;
+    let completo = mail::ops::server_rinomina_cartella(&sorgente, &vecchio, &nuovo).await?;
     let cache = apri_cache()?;
     cache
-        .rinomina_cartella_cache(&account.id, &vecchio, nuovo.trim())
+        .rinomina_cartella_cache(&account.id, &vecchio, &completo)
         .map_err(|e| e.to_string())?;
-    Ok(format!(
-        "Cartella «{vecchio}» rinominata in «{}».",
-        nuovo.trim()
-    ))
+    Ok(format!("Cartella «{vecchio}» rinominata in «{completo}»."))
 }
 
 /// **Elimina cartella**: `DELETE` sul server, poi cache **dell'account**.

@@ -337,15 +337,46 @@ export function vociMenuConversazione(c, opzioni = {}) {
 export function vociMenuCartella(cartella) {
   const nuova = { id: "nuova-cartella", etichetta: "Nuova cartella", ic: "📁" };
   if (!cartella || cartella.kind === "group") return [nuova];
+  // Come in Outlook, una cartella di sistema non si rinomina né si elimina: la
+  // voce resta visibile, disattivata, e dice perché.
+  const sistema = cartellaDiSistema(cartella.nome)
+    ? {
+        disabilitata: true,
+        nota: `«${cartella.nome}» è una cartella di sistema: il server la usa per ruolo, quindi non si rinomina né si elimina.`,
+      }
+    : {};
   return [
     nuova,
-    { id: "rinomina-cartella", etichetta: "Rinomina cartella", ic: "✎" },
-    { id: "elimina-cartella", etichetta: "Elimina cartella", ic: "🗑" },
+    { id: "rinomina-cartella", etichetta: "Rinomina cartella", ic: "✎", ...sistema },
+    { id: "elimina-cartella", etichetta: "Elimina cartella", ic: "🗑", ...sistema },
     { id: "svuota-cartella", etichetta: "Svuota cartella", ic: "🧹" },
     { sep: true },
     { id: "segna-tutti-letti", etichetta: "Segna tutti come già letti", ic: "✉" },
     { id: "preferita", etichetta: cartella.preferita ? "Rimuovi da Preferiti" : "Aggiungi a Preferiti", ic: "★" },
   ];
+}
+
+/**
+ * Nomi delle cartelle di sistema, confrontati sull'ultimo componente del nome
+ * («INBOX.Drafts» → «Drafts»). Sono quelli con cui il kernel riconosce le
+ * cartelle per ruolo (`NOMI_*` in `src-tauri/src/mail/ops.rs`), più la Posta in
+ * arrivo.
+ */
+const NOMI_CARTELLE_SISTEMA = [
+  "inbox", "posta in arrivo",
+  "bozze", "drafts", "bozza", "draft",
+  "posta inviata", "sent", "sent items", "sent messages", "elementi inviati", "inviata",
+  "posta eliminata", "trash", "eliminata", "deleted items", "deleted messages", "cestino",
+  "posta indesiderata", "junk", "junk e-mail", "indesiderata", "spam",
+  "archivio", "archive", "all mail",
+];
+
+/** Vero se `nome` è una cartella di sistema (Posta in arrivo, Bozze, Inviata, …). */
+export function cartellaDiSistema(nome) {
+  const n = String(nome || "").trim().toLowerCase();
+  if (!n) return false;
+  const ultimo = n.split(/[/\\.]/).pop().trim();
+  return NOMI_CARTELLE_SISTEMA.includes(n) || NOMI_CARTELLE_SISTEMA.includes(ultimo);
 }
 
 /** Testo della conferma prima di **eliminare** una cartella (mai muta). */
@@ -448,6 +479,12 @@ function creaLivello(ancora, voci, onScegli, opzioni, annidato) {
     b.type = "button";
     b.className = "rb-menu-voce" + (v.attivo ? " rb-menu-voce--attivo" : "");
     b.setAttribute("role", "menuitem");
+    // Una voce disattivata resta visibile e dice perché (`nota`), mai muta.
+    if (v.disabilitata) {
+      b.disabled = true;
+      b.setAttribute("aria-disabled", "true");
+      if (v.nota) b.title = v.nota;
+    }
     const freccia = Array.isArray(v.sottomenu) ? `<span class="rb-menu-freccia">▸</span>` : "";
     // Una voce con `colore` (voce «Categorizza») mostra l'icona nel colore
     // della categoria; negli altri menu l'icona resta neutra.

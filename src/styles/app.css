@@ -1151,6 +1151,8 @@ html[data-tauri] .titlebar { padding-left: 78px; }
   cursor: pointer;
 }
 .rb-menu-voce:hover { background: var(--row-hover-bg); }
+.rb-menu-voce:disabled { opacity: .45; cursor: default; }
+.rb-menu-voce:disabled:hover { background: transparent; }
 .rb-menu-voce--attivo { font-weight: 700; }
 .rb-menu-voce--attivo .rb-menu-ic { color: var(--accent); }
 .rb-menu-ic { flex: 0 0 auto; width: 14px; text-align: center; color: var(--text-secondary); }

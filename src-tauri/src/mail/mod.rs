@@ -167,6 +167,12 @@ pub trait MailSource: Send + Sync {
         ))
     }
 
+    /// Il separatore gerarchico che il server usa per `cartella` (es. `.` in
+    /// «INBOX.Drafts», `/` in «[Gmail]/Sent»). Predefinito: sconosciuto.
+    async fn delimitatore(&self, _cartella: &str) -> Result<Option<String>> {
+        Ok(None)
+    }
+
     /// **Rinomina** una cartella sul server (IMAP `RENAME`). Predefinito: non supportato.
     async fn rinomina_cartella(&self, _vecchio: &str, _nuovo: &str) -> Result<()> {
         Err(MailError::Imap(

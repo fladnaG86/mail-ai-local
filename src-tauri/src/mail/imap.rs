@@ -333,6 +333,19 @@ impl MailSource for ImapSource {
         Ok(())
     }
 
+    async fn delimitatore(&self, cartella: &str) -> Result<Option<String>> {
+        let mut sessione = self.connect().await?;
+        let nomi: Vec<async_imap::types::Name> = sessione
+            .list(None, Some(cartella))
+            .await
+            .map_err(errore_imap)?
+            .try_collect()
+            .await
+            .map_err(errore_imap)?;
+        let _ = sessione.logout().await;
+        Ok(nomi.first().and_then(|n| n.delimiter()).map(str::to_string))
+    }
+
     async fn rinomina_cartella(&self, vecchio: &str, nuovo: &str) -> Result<()> {
         if nuovo.trim().is_empty() {
             return Err(MailError::Imap(

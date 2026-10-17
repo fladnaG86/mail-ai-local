@@ -71,6 +71,7 @@ import {
   vociMenuMessaggio,
   vociMenuConversazione,
   vociMenuCartella,
+  cartellaDiSistema,
   SCADENZE,
   testoConfermaEliminaCartella,
   testoConfermaSvuotaCartella,
@@ -3424,6 +3425,7 @@ async function eseguiVoceCartella(voce, cartella) {
       return;
     }
     case "rinomina-cartella": {
+      if (cartellaDiSistema(nome)) return stato(`«${nome}» è una cartella di sistema: non si rinomina.`, true);
       const n = await chiediTesto("Rinomina cartella", `Nuovo nome per «${nome}»:`, nome);
       if (!n || n === nome) return;
       const { errore, esito } = await azioneMailConEsito("cartella_rinomina", {
@@ -3437,6 +3439,7 @@ async function eseguiVoceCartella(voce, cartella) {
       return;
     }
     case "elimina-cartella": {
+      if (cartellaDiSistema(nome)) return stato(`«${nome}» è una cartella di sistema: non si elimina.`, true);
       const ok = await chiediConferma("Elimina cartella", testoConfermaEliminaCartella(nome));
       if (!ok) return;
       const { errore, esito } = await azioneMailConEsito("cartella_elimina", { nome, accountId });

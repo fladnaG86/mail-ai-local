@@ -422,15 +422,45 @@ pub async fn server_rinomina_cartella(
     src: &dyn MailSource,
     vecchio: &str,
     nuovo: &str,
-) -> Result<(), String> {
+) -> Result<String, String> {
+    if vecchio.trim().eq_ignore_ascii_case("INBOX") {
+        return Err(
+            "la Posta in arrivo (INBOX) non si può rinominare: in IMAP tutta la posta \
+             in arrivo finirebbe nella cartella col nome nuovo"
+                .to_string(),
+        );
+    }
     if nuovo.trim().is_empty() {
         return Err(
             "il nuovo nome della cartella è vuoto: non c'è nulla da rinominare".to_string(),
         );
     }
-    src.rinomina_cartella(vecchio, nuovo.trim())
+    // Se il server non dice il separatore, il nome si usa com'è (come prima).
+    let delimitatore = src.delimitatore(vecchio).await.unwrap_or(None);
+    let completo = nome_completo_rinomina(vecchio, nuovo, delimitatore.as_deref());
+    src.rinomina_cartella(vecchio, &completo)
         .await
-        .map_err(|e| e.to_string())
+        .map_err(|e| e.to_string())?;
+    Ok(completo)
+}
+
+/// Il nome completo della cartella rinominata. Scrivendo solo il nome nuovo, la
+/// cartella resta sotto lo stesso genitore: con il separatore `.`,
+/// «INBOX.Progetti» → «Clienti» diventa «INBOX.Clienti». Sui server che tengono
+/// tutto sotto `INBOX.` una cartella fuori da INBOX verrebbe rifiutata. Un nome
+/// che contiene già il separatore, o un separatore sconosciuto, si usa com'è.
+pub fn nome_completo_rinomina(vecchio: &str, nuovo: &str, delimitatore: Option<&str>) -> String {
+    let nuovo = nuovo.trim();
+    let Some(d) = delimitatore.filter(|d| !d.is_empty()) else {
+        return nuovo.to_string();
+    };
+    if nuovo.contains(d) {
+        return nuovo.to_string();
+    }
+    match vecchio.rfind(d) {
+        Some(i) => format!("{}{d}{nuovo}", &vecchio[..i]),
+        None => nuovo.to_string(),
+    }
 }
 
 /// Elimina una cartella sul server (`DELETE`).
@@ -470,9 +500,9 @@ pub async fn rinomina_cartella(
     vecchio: &str,
     nuovo: &str,
 ) -> Result<(), String> {
-    server_rinomina_cartella(src, vecchio, nuovo).await?;
+    let completo = server_rinomina_cartella(src, vecchio, nuovo).await?;
     cache
-        .rinomina_cartella_cache(account, vecchio, nuovo.trim())
+        .rinomina_cartella_cache(account, vecchio, &completo)
         .map_err(|e| e.to_string())
 }
 
