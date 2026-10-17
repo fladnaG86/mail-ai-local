@@ -142,7 +142,7 @@ import {
   deveSincronizzareAvvio,
 } from "./views/sincronizzazione.js";
 import { apriPannelloArchiviazione } from "./views/archiviazione.js";
-import { EVENTO_AVANZAMENTO_SYNC, statoAvanzamento } from "./views/avanzamento-sync.js";
+import { EVENTO_AVANZAMENTO_SYNC, statoAvanzamento, etichettaCartellaSync } from "./views/avanzamento-sync.js";
 import { apriPannelloAspetto, applicaAccento, normAccento } from "./views/aspetto.js";
 import {
   apriPannelloAccessibilita,
@@ -2515,8 +2515,9 @@ async function azioneMailConEsito(nome, args) {
 }
 
 /**
- * Stato vuoto della lista nell'app vera: nessun account configurato. Spiega cosa
- * fare e apre le impostazioni in un clic — meglio di una lista vuota e muta.
+ * Stato vuoto della lista nell'app vera. Con almeno una casella configurata è
+ * solo la cartella a essere vuota, e lo si dice; senza caselle si spiega cosa
+ * fare e si aprono le impostazioni in un clic — meglio di una lista vuota e muta.
  */
 function renderStatoVuoto(listEl, readingEl) {
   if (readingEl) readingEl.replaceChildren();
@@ -2526,6 +2527,15 @@ function renderStatoVuoto(listEl, readingEl) {
   box.className = "lista-vuota";
   const titolo = document.createElement("p");
   titolo.className = "lista-vuota-titolo";
+  if (gruppiCartelle.length) {
+    titolo.textContent = "Nessun elemento da visualizzare";
+    const testo = document.createElement("p");
+    testo.className = "lista-vuota-testo";
+    testo.textContent = `La cartella «${etichettaCartellaSync(cartellaAttiva)}» è vuota.`;
+    box.append(titolo, testo);
+    listEl.append(box);
+    return;
+  }
   titolo.textContent = "Nessun account configurato";
   const testo = document.createElement("p");
   testo.className = "lista-vuota-testo";
