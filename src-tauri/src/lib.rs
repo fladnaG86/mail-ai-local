@@ -2163,6 +2163,7 @@ pub struct CartelleAccountIpc {
 #[tauri::command]
 async fn cartelle_elenco(
     account_id: Option<String>,
+    solo_cache: Option<bool>,
 ) -> Result<Vec<CartelleAccountIpc>, String> {
     let dir = app_config_dir();
     let accounts = config::load_accounts(&dir);
@@ -2180,7 +2181,15 @@ async fn cartelle_elenco(
     // predefinito): le cartelle viste si registrano nel registro **di quell'account**.
     let target = risolvi_account(&accounts, scelta, predefinito.as_ref().map(|a| a.id.as_str()))
         .cloned()?;
-    if let Ok(sorgente) = mail::imap::ImapSource::from_account(&target, &secrets::Store::real()) {
+    // Con `soloCache` (all'avvio) non si tocca la rete: bastano le cartelle già
+    // registrate, che la sincronizzazione tiene aggiornate.
+    let da_server = !solo_cache.unwrap_or(false);
+    let sorgente = if da_server {
+        mail::imap::ImapSource::from_account(&target, &secrets::Store::real()).ok()
+    } else {
+        None
+    };
+    if let Some(sorgente) = sorgente {
         if let Ok(nomi) = mail::ops::cartelle(&sorgente).await {
             let cache = apri_cache()?;
             for nome in &nomi {
@@ -3671,7 +3680,7 @@ mod test_account_inesistente {
             atteso(cartella_segna_tutta_letta("INBOX".into(), id()).await),
             "cartella_segna_tutta_letta"
         );
-        assert!(atteso(cartelle_elenco(id()).await), "cartelle_elenco");
+        assert!(atteso(cartelle_elenco(id(), None).await), "cartelle_elenco");
     }
 
     #[test]

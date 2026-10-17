@@ -694,6 +694,17 @@ function annullaSegnaLettoAlPassaggio() {
   }
 }
 
+/** Vero se `a` e `b` sono lo stesso messaggio: stessa casella, cartella e UID. */
+function stessoMessaggio(a, b) {
+  return (
+    a === b ||
+    (!!a && !!b && !!a.uid &&
+      String(a.uid) === String(b.uid) &&
+      (a.account || "") === (b.account || "") &&
+      (a.folder || "") === (b.folder || ""))
+  );
+}
+
 /**
  * Gli oggetti del modello attuale che rappresentano `messaggio`: stessa casella,
  * cartella e UID. Durante l'attesa la lista può essersi ricaricata (una
@@ -701,12 +712,7 @@ function annullaSegnaLettoAlPassaggio() {
  * grassetto la riga che si vede.
  */
 function copieCorrenti(messaggio) {
-  const stesso = (m) =>
-    m === messaggio ||
-    (!!m.uid &&
-      String(m.uid) === String(messaggio.uid) &&
-      (m.account || "") === (messaggio.account || "") &&
-      (m.folder || "") === (messaggio.folder || ""));
+  const stesso = (m) => stessoMessaggio(m, messaggio);
   const copie = new Set([messaggio]);
   for (const m of messaggiCorrenti) if (stesso(m)) copie.add(m);
   for (const c of conversazioniCorrenti) for (const m of c.messaggi || []) if (stesso(m)) copie.add(m);
@@ -1782,6 +1788,9 @@ async function selezionaCartella(account, cartella) {
  * mostra vuoto quando non c'è nulla (una casella senza posta non finge dati).
  */
 async function apriCartellaSelezionata() {
+  // Dopo una sincronizzazione la lista si ricarica: il messaggio che si stava
+  // leggendo resta aperto, se c'è ancora (stessa casella, cartella e UID).
+  const prima = messaggioCorrente;
   const messaggi = await listaDallaCache(listEl, countEl, syncEl, accountEl);
   if (Array.isArray(messaggi)) {
     messaggiCorrenti = messaggi;
@@ -1789,9 +1798,11 @@ async function apriCartellaSelezionata() {
       conversazioniCorrenti = raggruppaConversazioni(messaggiCorrenti);
     }
   }
+  const daAprire = (prima && messaggiCorrenti.find((m) => stessoMessaggio(m, prima))) || messaggiCorrenti[0];
+  for (const m of messaggiCorrenti) m.selected = m === daAprire;
   ridisegna();
   if (messaggiCorrenti.length) {
-    await apriMessaggio(readingEl, messaggiCorrenti[0]);
+    await apriMessaggio(readingEl, daAprire);
   } else {
     renderStatoVuoto(listEl, readingEl);
   }
@@ -3023,12 +3034,13 @@ function disegnaSidebar() {
  * casella, con i non letti dalla cache); nel browser restano dati di esempio,
  * con due caselle, per il confronto visivo.
  */
-async function caricaCartelle() {
+async function caricaCartelle({ soloCache = false } = {}) {
   if (dentroTauri()) {
     let elenco = null;
     try {
-      // `accountId: null` = tutti gli account (l'argomento è esplicito).
-      elenco = await window.__TAURI__.core.invoke("cartelle_elenco", { accountId: null });
+      // `accountId: null` = tutti gli account (l'argomento è esplicito). Con
+      // `soloCache` il kernel non interroga il server (LIST): serve all'avvio.
+      elenco = await window.__TAURI__.core.invoke("cartelle_elenco", { accountId: null, soloCache });
     } catch {
       elenco = null;
     }
@@ -3739,7 +3751,9 @@ export async function boot() {
     collegaRibbon(el);
   });
   document.querySelectorAll("#sidebar").forEach((el) => {
-    renderSidebar(el);
+    // Nell'app vera niente cartelle d'esempio, nemmeno per un istante: quelle
+    // vere arrivano da `caricaCartelle` subito dopo.
+    renderSidebar(el, dentroTauri() ? [] : undefined);
     collegaMenuCartelle(el);
     collegaSelezioneCartelle(el);
   });
@@ -3810,7 +3824,8 @@ export async function boot() {
   // sottomenu «Contrassegna» e conversazioni ignorate.
   await caricaVociScadenza();
   await caricaConversazioniIgnorate();
-  await caricaCartelle();
+  // Dalla cache: all'avvio la rete non deve ritardare la prima schermata.
+  await caricaCartelle({ soloCache: true });
 
   // Aggancio per le prove visive: ?view=account apre la finestra Account con
   // due caselle di esempio (blocco J), per confrontarla col mockup misurato
@@ -3874,6 +3889,7 @@ export async function boot() {
   // lancio, e in quel caso si sincronizzano **tutte** le caselle (non solo la
   // prima). Spenta (default), si legge solo la cache già presente.
   let messaggi = null;
+  let syncAvvio = false;
   if (dentroTauri()) {
     const accounts = await accountConfigurati();
     // Prima apertura: senza nessuna casella configurata si apre da sola la
@@ -3882,20 +3898,10 @@ export async function boot() {
     // quindi si ripropone a ogni avvio finché non se ne configura una (e chi la
     // chiude con Esc la ritrova al riavvio, senza restare intrappolato).
     if (accounts.length === 0) apriAccountUI({ primoAvvio: true });
-    if (deveSincronizzareAvvio(preferenzeCorrenti)) {
-      if (accounts.length > 1) {
-        // Ogni account porta il suo esito: uno che fallisce non blocca gli altri.
-        await comando("mail_sync_tutti");
-      } else if (accounts.length === 1) {
-        await comando("mail_sync", { accountId: accounts[0].id });
-      }
-      // Si allinea `ultimaSyncMs` come fa `sincronizzaOra`: altrimenti il timer
-      // (se c'è un intervallo) troverebbe l'ora a 0 e risincronizzerebbe dopo
-      // un minuto, duplicando subito il lavoro appena fatto.
-      if (accounts.length > 0) ultimaSyncMs = Date.now();
-    }
-    // La barra laterale (con i non letti appena scritti) e poi la lista.
-    await caricaCartelle();
+    // «Sincronizza all'avvio» non blocca la prima schermata: si mostra subito la
+    // posta già in cache e la sincronizzazione parte dopo, in background, come
+    // «Invia e ricevi» (con la barra di avanzamento), vedi in fondo a `boot`.
+    syncAvvio = deveSincronizzareAvvio(preferenzeCorrenti) && accounts.length > 0;
     messaggi = await listaDallaCache(listEl, countEl, syncEl, accountEl);
   }
 
@@ -3965,6 +3971,13 @@ export async function boot() {
     renderStatoVuoto(listEl, readingEl);
   } else {
     await apriMessaggio(readingEl, messaggi.find((m) => m.selected) || messaggi[0]);
+  }
+
+  if (syncAvvio) {
+    // Si allinea `ultimaSyncMs` come fa `sincronizzaOra`: altrimenti il timer
+    // (se c'è un intervallo) risincronizzerebbe subito dopo.
+    ultimaSyncMs = Date.now();
+    inviaERicevi();
   }
 
   // ?view=assistente: scheda IA simulata nel pannello di lettura (solo browser).
