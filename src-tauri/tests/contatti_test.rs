@@ -25,6 +25,7 @@ fn contatto(nome: &str, cognome: &str, email: &str) -> Contatto {
         note: String::new(),
         creato: 0,
         modificato: 0,
+        ..Default::default()
     }
 }
 

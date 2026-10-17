@@ -163,6 +163,12 @@ pub struct ContattoRow {
     pub note: String,
     pub creato: i64,
     pub modificato: i64,
+    /// Blocco U (vedi `contatti::Contatto`).
+    pub ruolo: String,
+    pub indirizzo: String,
+    pub email_altre: Vec<crate::contatti::Recapito>,
+    pub telefoni: Vec<crate::contatti::Recapito>,
+    pub origine: String,
 }
 
 /// Dati per salvare un contatto della rubrica. `id` assente = nuovo contatto.
@@ -175,6 +181,58 @@ pub struct ContattoInput {
     pub telefono: String,
     pub azienda: String,
     pub note: String,
+    pub ruolo: String,
+    pub indirizzo: String,
+    pub email_altre: Vec<crate::contatti::Recapito>,
+    pub telefoni: Vec<crate::contatti::Recapito>,
+    pub origine: String,
+}
+
+/// Colonne di `contatti` lette da `contatto_from`, nell'ordine.
+const CONTATTO_COLONNE: &str = "id, nome, cognome, email, telefono, azienda, note, creato, \
+     modificato, ruolo, indirizzo, email_altre, telefoni, origine";
+
+/// Colonne aggiunte a `contatti` dal blocco U (migrate come quelle di `messages`).
+const COLONNE_CONTATTI_AGGIUNTE: &[(&str, &str)] = &[
+    ("ruolo", "TEXT NOT NULL DEFAULT ''"),
+    ("indirizzo", "TEXT NOT NULL DEFAULT ''"),
+    ("email_altre", "TEXT NOT NULL DEFAULT '[]'"),
+    ("telefoni", "TEXT NOT NULL DEFAULT '[]'"),
+    ("origine", "TEXT NOT NULL DEFAULT ''"),
+];
+
+/// Email «altre» normalizzate: minuscole, senza vuote, senza la principale e
+/// senza doppioni (vince la prima etichetta).
+fn normalizza_email_altre(
+    altre: &[crate::contatti::Recapito],
+    principale: &str,
+) -> Vec<crate::contatti::Recapito> {
+    let mut out: Vec<crate::contatti::Recapito> = Vec::new();
+    for r in altre {
+        let valore = r.valore.trim().to_ascii_lowercase();
+        if valore.is_empty() || valore == principale || out.iter().any(|x| x.valore == valore) {
+            continue;
+        }
+        out.push(crate::contatti::Recapito { etichetta: r.etichetta.trim().to_string(), valore });
+    }
+    out
+}
+
+/// Telefoni «in più» senza vuoti né doppioni.
+fn normalizza_telefoni(telefoni: &[crate::contatti::Recapito]) -> Vec<crate::contatti::Recapito> {
+    let mut out: Vec<crate::contatti::Recapito> = Vec::new();
+    for r in telefoni {
+        let valore = r.valore.trim().to_string();
+        if valore.is_empty() || out.iter().any(|x| x.valore == valore) {
+            continue;
+        }
+        out.push(crate::contatti::Recapito { etichetta: r.etichetta.trim().to_string(), valore });
+    }
+    out
+}
+
+fn json_recapiti(r: &[crate::contatti::Recapito]) -> String {
+    serde_json::to_string(r).unwrap_or_else(|_| "[]".to_string())
 }
 
 /// Una riga della tabella `inviti` (blocco G, versione inviti).
@@ -1298,15 +1356,13 @@ impl Store {
     /// (senza distinzione fra maiuscole e minuscole) compare in nome, cognome,
     /// email o azienda.
     pub fn contatti(&self, filtro: Option<&str>) -> Result<Vec<ContattoRow>> {
-        let mut sql = String::from(
-            "SELECT id, nome, cognome, email, telefono, azienda, note, creato, modificato \
-             FROM contatti",
-        );
+        let mut sql = format!("SELECT {CONTATTO_COLONNE} FROM contatti");
         let mut valori: Vec<Value> = Vec::new();
         if let Some(f) = filtro.map(str::trim).filter(|f| !f.is_empty()) {
             sql.push_str(
                 " WHERE lower(nome) LIKE ?1 OR lower(cognome) LIKE ?1 \
-                 OR lower(email) LIKE ?1 OR lower(azienda) LIKE ?1",
+                 OR lower(email) LIKE ?1 OR lower(azienda) LIKE ?1 \
+                 OR lower(email_altre) LIKE ?1 OR lower(ruolo) LIKE ?1",
             );
             valori.push(Value::Text(format!("%{}%", f.to_lowercase())));
         }
@@ -1322,18 +1378,51 @@ impl Store {
     }
 
     /// Cerca un contatto per email (chiave logica, confrontata in minuscolo).
+    ///
+    /// Blocco U: se l'indirizzo non è la principale di nessuno, si cerca fra le
+    /// email «altre» (così «Aggiungi ai contatti» non crea un doppione).
     pub fn contatto_per_email(&self, email: &str) -> Result<Option<ContattoRow>> {
         let normalizzata = email.trim().to_ascii_lowercase();
         let riga = self
             .conn
             .query_row(
-                "SELECT id, nome, cognome, email, telefono, azienda, note, creato, modificato \
-                 FROM contatti WHERE email = ?1 LIMIT 1",
+                &format!("SELECT {CONTATTO_COLONNE} FROM contatti WHERE email = ?1 LIMIT 1"),
                 params![normalizzata],
                 contatto_from,
             )
             .optional()?;
-        Ok(riga)
+        if riga.is_some() || normalizzata.is_empty() {
+            return Ok(riga);
+        }
+        let mut stmt = self.conn.prepare(&format!(
+            "SELECT {CONTATTO_COLONNE} FROM contatti WHERE lower(email_altre) LIKE ?1"
+        ))?;
+        let candidati = stmt.query_map(params![format!("%{normalizzata}%")], contatto_from)?;
+        for c in candidati {
+            let c = c?;
+            if c.email_altre.iter().any(|r| r.valore == normalizzata) {
+                return Ok(Some(c));
+            }
+        }
+        Ok(None)
+    }
+
+    /// Blocco U: un'email non appartiene mai a due contatti. Errore leggibile se
+    /// una di `email` è già (come principale o altra) di un contatto diverso da
+    /// `proprietario`.
+    fn controlla_email_libere(&self, email: &[&str], proprietario: Option<i64>) -> Result<()> {
+        for e in email {
+            if let Some(altro) = self.contatto_per_email(e)? {
+                if Some(altro.id) != proprietario {
+                    let chi = format!("{} {}", altro.nome, altro.cognome);
+                    let chi = if chi.trim().is_empty() { altro.email.clone() } else { chi.trim().to_string() };
+                    return Err(StoreError::Contatto(format!(
+                        "l'indirizzo {e} è già del contatto «{chi}»"
+                    )));
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Salva un contatto con deduplicazione per email: se esiste già un contatto
@@ -1356,6 +1445,9 @@ impl Store {
         }
         let adesso = adesso_unix();
 
+        let altre = normalizza_email_altre(&c.email_altre, &email);
+        let telefoni = normalizza_telefoni(&c.telefoni);
+
         if let Some(id) = c.id {
             let esiste: Option<i64> = self
                 .conn
@@ -1364,10 +1456,19 @@ impl Store {
                 })
                 .optional()?;
             if esiste.is_some() {
+                let tutte: Vec<&str> = std::iter::once(email.as_str())
+                    .chain(altre.iter().map(|r| r.valore.as_str()))
+                    .collect();
+                self.controlla_email_libere(&tutte, Some(id))?;
                 self.conn.execute(
                     "UPDATE contatti SET nome = ?2, cognome = ?3, email = ?4, telefono = ?5, \
-                     azienda = ?6, note = ?7, modificato = ?8 WHERE id = ?1",
-                    params![id, c.nome, c.cognome, email, c.telefono, c.azienda, c.note, adesso],
+                     azienda = ?6, note = ?7, modificato = ?8, ruolo = ?9, indirizzo = ?10, \
+                     email_altre = ?11, telefoni = ?12, origine = ?13 WHERE id = ?1",
+                    params![
+                        id, c.nome, c.cognome, email, c.telefono, c.azienda, c.note, adesso,
+                        c.ruolo, c.indirizzo, json_recapiti(&altre), json_recapiti(&telefoni),
+                        c.origine
+                    ],
                 )?;
                 return Ok((id, true));
             }
@@ -1399,18 +1500,42 @@ impl Store {
             } else {
                 c.note.clone()
             };
+            let ruolo = if c.ruolo.trim().is_empty() { esistente.ruolo } else { c.ruolo.clone() };
+            let indirizzo =
+                if c.indirizzo.trim().is_empty() { esistente.indirizzo } else { c.indirizzo.clone() };
+            // Le email e i telefoni «in più» si uniscono a quelli già presenti.
+            let mut unite = esistente.email_altre.clone();
+            unite.extend(altre);
+            let unite = normalizza_email_altre(&unite, &esistente.email);
+            let nuove: Vec<&str> = unite.iter().map(|r| r.valore.as_str()).collect();
+            self.controlla_email_libere(&nuove, Some(esistente.id))?;
+            let mut tel = esistente.telefoni.clone();
+            tel.extend(telefoni);
+            let tel = normalizza_telefoni(&tel);
+            // Un salvataggio dell'utente rende «suo» un contatto aggiunto da sé.
+            let origine = if c.origine.is_empty() { String::new() } else { esistente.origine };
             self.conn.execute(
                 "UPDATE contatti SET nome = ?2, cognome = ?3, telefono = ?4, azienda = ?5, \
-                 note = ?6, modificato = ?7 WHERE id = ?1",
-                params![esistente.id, nome, cognome, telefono, azienda, note, adesso],
+                 note = ?6, modificato = ?7, ruolo = ?8, indirizzo = ?9, email_altre = ?10, \
+                 telefoni = ?11, origine = ?12 WHERE id = ?1",
+                params![
+                    esistente.id, nome, cognome, telefono, azienda, note, adesso, ruolo,
+                    indirizzo, json_recapiti(&unite), json_recapiti(&tel), origine
+                ],
             )?;
             return Ok((esistente.id, true));
         }
 
+        let nuove: Vec<&str> = altre.iter().map(|r| r.valore.as_str()).collect();
+        self.controlla_email_libere(&nuove, None)?;
         let id: i64 = self.conn.query_row(
-            "INSERT INTO contatti (nome, cognome, email, telefono, azienda, note, creato, modificato) \
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7) RETURNING id",
-            params![c.nome, c.cognome, email, c.telefono, c.azienda, c.note, adesso],
+            "INSERT INTO contatti (nome, cognome, email, telefono, azienda, note, creato, \
+             modificato, ruolo, indirizzo, email_altre, telefoni, origine) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?7, ?8, ?9, ?10, ?11, ?12) RETURNING id",
+            params![
+                c.nome, c.cognome, email, c.telefono, c.azienda, c.note, adesso, c.ruolo,
+                c.indirizzo, json_recapiti(&altre), json_recapiti(&telefoni), c.origine
+            ],
             |row| row.get(0),
         )?;
         Ok((id, false))
@@ -2148,6 +2273,19 @@ fn migra(conn: &Connection) -> Result<()> {
             conn.execute_batch(&format!("ALTER TABLE messages ADD COLUMN {colonna} {tipo}"))?;
         }
     }
+    // Blocco U: colonne nuove della rubrica, aggiunte solo se mancano.
+    let in_contatti: Vec<String> = {
+        let mut stmt = conn.prepare("PRAGMA table_info(contatti)")?;
+        let rows = stmt.query_map([], |row| row.get::<_, String>(1))?;
+        rows.collect::<std::result::Result<_, _>>()?
+    };
+    if !in_contatti.is_empty() {
+        for (colonna, tipo) in COLONNE_CONTATTI_AGGIUNTE {
+            if !in_contatti.iter().any(|c| c == colonna) {
+                conn.execute_batch(&format!("ALTER TABLE contatti ADD COLUMN {colonna} {tipo}"))?;
+            }
+        }
+    }
     // Blocco L: `cartelle`, `conversazioni_ignorate` e `conferme` diventano **per
     // account** (chiave estesa con `account`). Un database creato prima del blocco
     // non ha la colonna: le si ricostruisce con lo schema nuovo copiando le righe
@@ -2303,6 +2441,11 @@ fn contatto_from(row: &rusqlite::Row<'_>) -> rusqlite::Result<ContattoRow> {
         note: row.get(6)?,
         creato: row.get(7)?,
         modificato: row.get(8)?,
+        ruolo: row.get(9)?,
+        indirizzo: row.get(10)?,
+        email_altre: serde_json::from_str(&row.get::<_, String>(11)?).unwrap_or_default(),
+        telefoni: serde_json::from_str(&row.get::<_, String>(12)?).unwrap_or_default(),
+        origine: row.get(13)?,
     })
 }
 

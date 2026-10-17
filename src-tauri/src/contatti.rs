@@ -22,8 +22,22 @@ use serde::{Deserialize, Serialize};
 
 use crate::mail::ops::estrai_indirizzo;
 
+/// Un recapito con etichetta (email o telefono «in più» della scheda):
+/// `etichetta` è libera (lavoro, casa, cellulare…) e può essere vuota.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Recapito {
+    #[serde(default)]
+    pub etichetta: String,
+    #[serde(default)]
+    pub valore: String,
+}
+
 /// Un contatto nella forma scambiata con l'interfaccia (camelCase).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+///
+/// `email` e `telefono` sono quelli **principali** (l'email è la chiave dei dati
+/// salvati prima del blocco U); `email_altre` e `telefoni` sono quelli in più.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Contatto {
     /// Identificatore della riga; `None` per un contatto nuovo.
@@ -41,6 +55,20 @@ pub struct Contatto {
     pub azienda: String,
     #[serde(default)]
     pub note: String,
+    /// Blocco U: ruolo in azienda, indirizzo postale (testo libero).
+    #[serde(default)]
+    pub ruolo: String,
+    #[serde(default)]
+    pub indirizzo: String,
+    /// Blocco U: email e telefoni oltre a quelli principali.
+    #[serde(default)]
+    pub email_altre: Vec<Recapito>,
+    #[serde(default)]
+    pub telefoni: Vec<Recapito>,
+    /// Blocco U: "" se inserito dall'utente, "automatico" se aggiunto dopo un
+    /// invio, "macos" se importato dai Contatti di macOS.
+    #[serde(default)]
+    pub origine: String,
     /// Secondi dall'epoca Unix (solo lettura).
     #[serde(default)]
     pub creato: i64,
@@ -71,6 +99,11 @@ impl From<crate::store::ContattoRow> for Contatto {
             telefono: r.telefono,
             azienda: r.azienda,
             note: r.note,
+            ruolo: r.ruolo,
+            indirizzo: r.indirizzo,
+            email_altre: r.email_altre,
+            telefoni: r.telefoni,
+            origine: r.origine,
             creato: r.creato,
             modificato: r.modificato,
         }
@@ -87,6 +120,11 @@ impl From<&Contatto> for crate::store::ContattoInput {
             telefono: c.telefono.clone(),
             azienda: c.azienda.clone(),
             note: c.note.clone(),
+            ruolo: c.ruolo.clone(),
+            indirizzo: c.indirizzo.clone(),
+            email_altre: c.email_altre.clone(),
+            telefoni: c.telefoni.clone(),
+            origine: c.origine.clone(),
         }
     }
 }
@@ -354,6 +392,7 @@ fn scheda_da(prop: &[(String, String)]) -> SchedaVcard {
         note: String::new(),
         creato: 0,
         modificato: 0,
+        ..Default::default()
     };
     let mut fn_ = String::new();
     let mut ignorati: Vec<String> = Vec::new();
@@ -525,6 +564,7 @@ mod tests {
             note: String::new(),
             creato: 0,
             modificato: 0,
+            ..Default::default()
         }
     }
 
