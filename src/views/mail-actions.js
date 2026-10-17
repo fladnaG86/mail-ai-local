@@ -405,8 +405,14 @@ export function chiudiMenu() {
 }
 
 /** Posiziona un menu sotto l'elemento a cui è ancorato, dentro lo schermo. */
-function posiziona(menu, ancora) {
-  const r = ancora && ancora.getBoundingClientRect ? ancora.getBoundingClientRect() : { left: 0, top: 0, bottom: 0 };
+function posiziona(menu, ancora, punto) {
+  // Un menu contestuale (clic destro) si apre dove si è fatto clic, gli altri
+  // sotto la loro ancora; se sotto non c'è posto, sopra.
+  const r = punto
+    ? { left: punto.x, top: punto.y, bottom: punto.y }
+    : ancora && ancora.getBoundingClientRect
+      ? ancora.getBoundingClientRect()
+      : { left: 0, top: 0, bottom: 0 };
   const mw = menu.offsetWidth;
   const mh = menu.offsetHeight;
   const left = Math.max(4, Math.min(r.left, window.innerWidth - mw - 8));
@@ -422,7 +428,8 @@ function posiziona(menu, ancora) {
  *
  * `voci` è un elenco di `{ id, etichetta, ic, attivo, sottomenu }` oppure
  * `{ sep: true }`. `onScegli(voce)` è chiamato solo al clic su una voce senza
- * sottomenu. Con `opzioni.campo` si aggiunge in coda una schermata di testo.
+ * sottomenu. Con `opzioni.campo` si aggiunge in coda una schermata di testo;
+ * con `opzioni.punto` ({x, y}) il menu si apre in quel punto (clic destro).
  */
 function creaLivello(ancora, voci, onScegli, opzioni, annidato) {
   if (!annidato) chiudiMenu();
@@ -491,7 +498,7 @@ function creaLivello(ancora, voci, onScegli, opzioni, annidato) {
   document.body.append(menu);
   if (!annidato) ancoraRadice = ancora;
   menuAperti.push(menu);
-  posiziona(menu, ancora);
+  posiziona(menu, ancora, annidato ? null : opzioni.punto);
 
   if (!chiudiAlClick) {
     chiudiAlClick = (e) => {

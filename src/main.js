@@ -3312,16 +3312,16 @@ async function salvaBozzaKernel(campi) {
 }
 
 /** Menu contestuale di un messaggio della lista. */
-function apriMenuMessaggio(ancora, m) {
+function apriMenuMessaggio(ancora, m, punto) {
   const voci = vociMenuMessaggio(m, { ignorate: ignorateDi(m && m.account) });
-  apriMenu(ancora, voci, (v) => eseguiVoceMenu(v, m, null, ancora));
+  apriMenu(ancora, voci, (v) => eseguiVoceMenu(v, m, null, ancora), { punto });
 }
 
 /** Menu contestuale di una conversazione (rappresentata dal messaggio più recente). */
-function apriMenuConversazione(ancora, c) {
+function apriMenuConversazione(ancora, c, punto) {
   const voci = vociMenuConversazione(c, { ignorate: ignorateDi(c && c.account) });
   const rappresentante = (c.messaggi || [])[c.messaggi.length - 1] || { uid: c.uid, folder: CARTELLA };
-  apriMenu(ancora, voci, (v) => eseguiVoceMenu(v, rappresentante, c, ancora));
+  apriMenu(ancora, voci, (v) => eseguiVoceMenu(v, rappresentante, c, ancora), { punto });
 }
 
 /** Smista la voce scelta nel menu di un messaggio o di una conversazione. */
@@ -3373,9 +3373,9 @@ function eseguiVoceMenu(voce, m, conversazione, ancora) {
 }
 
 /** Menu contestuale di una cartella della barra laterale. */
-function apriMenuCartella(ancora, cartella) {
+function apriMenuCartella(ancora, cartella, punto) {
   const voci = vociMenuCartella(cartella);
-  apriMenu(ancora, voci, (v) => eseguiVoceCartella(v, cartella));
+  apriMenu(ancora, voci, (v) => eseguiVoceCartella(v, cartella), { punto });
 }
 
 /** Le azioni del menu contestuale di una cartella. Blocco L: ogni azione passa
@@ -3477,8 +3477,13 @@ function collegaMenuCartelle(sidebar) {
       preferita: !!d.preferita,
       account: d.account || "",
       kind: d.kind || "child",
-    });
+    }, puntoDi(d));
   });
+}
+
+/** Il punto del clic destro portato da un evento del menu contestuale, se c'è. */
+function puntoDi(d) {
+  return d && Number.isFinite(d.x) && Number.isFinite(d.y) ? { x: d.x, y: d.y } : null;
 }
 
 /**
@@ -3949,11 +3954,11 @@ export async function boot() {
   // Blocco I1: clic destro su un messaggio o su una conversazione della lista.
   listEl.addEventListener("contextmenu-messaggio", (e) => {
     const riga = e.target.closest(".row") || listEl;
-    apriMenuMessaggio(riga, e.detail && e.detail.messaggio);
+    apriMenuMessaggio(riga, e.detail && e.detail.messaggio, puntoDi(e.detail));
   });
   listEl.addEventListener("contextmenu-conversazione", (e) => {
     const riga = e.target.closest(".conv") || listEl;
-    apriMenuConversazione(riga, e.detail && e.detail.conversazione);
+    apriMenuConversazione(riga, e.detail && e.detail.conversazione, puntoDi(e.detail));
   });
 
   if (statoVuoto) {

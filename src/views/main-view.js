@@ -292,8 +292,11 @@ export function renderListaConversazioni(root, conversazioni = [], opzioni = {})
       riga.addEventListener("contextmenu", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        root.dispatchEvent(
-          new CustomEvent("contextmenu-messaggio", { detail: { messaggio: m }, bubbles: true }),
+        riga.dispatchEvent(
+          new CustomEvent("contextmenu-messaggio", {
+            detail: { messaggio: m, x: e.clientX, y: e.clientY },
+            bubbles: true,
+          }),
         );
       });
       figli.append(riga);
@@ -315,9 +318,9 @@ export function renderListaConversazioni(root, conversazioni = [], opzioni = {})
     header.addEventListener("contextmenu", (e) => {
       e.preventDefault();
       const rappresentante = (c.messaggi || [])[c.messaggi.length - 1] || null;
-      root.dispatchEvent(
+      header.dispatchEvent(
         new CustomEvent("contextmenu-conversazione", {
-          detail: { conversazione: c, messaggio: rappresentante },
+          detail: { conversazione: c, messaggio: rappresentante, x: e.clientX, y: e.clientY },
           bubbles: true,
         }),
       );
@@ -501,7 +504,7 @@ export function renderSidebar(root, folders = sampleFolders) {
     if (f.owner !== "tutti") {
       nodo.addEventListener("contextmenu", (e) => {
         e.preventDefault();
-        root.dispatchEvent(
+        nodo.dispatchEvent(
           new CustomEvent("folder-contextmenu", {
             detail: {
               nome,
@@ -573,8 +576,11 @@ export function renderList(root, messages = sampleMessages, opzioni = {}) {
     // Clic destro: menu contestuale del messaggio (blocco I1).
     row.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      root.dispatchEvent(
-        new CustomEvent("contextmenu-messaggio", { detail: { messaggio: m }, bubbles: true }),
+      row.dispatchEvent(
+        new CustomEvent("contextmenu-messaggio", {
+          detail: { messaggio: m, x: e.clientX, y: e.clientY },
+          bubbles: true,
+        }),
       );
     });
     root.append(row);
