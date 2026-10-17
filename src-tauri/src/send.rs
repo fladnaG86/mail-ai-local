@@ -734,7 +734,7 @@ fn leggi_originale(grezzo: &[u8]) -> Originale {
 }
 
 /// Formatta un elenco di indirizzi come "Nome <utente@host>", separati da virgola.
-fn formatta_indirizzi(addr: Option<&mail_parser::Address>) -> String {
+pub(crate) fn formatta_indirizzi(addr: Option<&mail_parser::Address>) -> String {
     match addr {
         Some(a) => a
             .iter()

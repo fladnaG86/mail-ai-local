@@ -77,6 +77,46 @@ test("senza aperture in coda non si apre nulla", async () => {
   assert.equal(w.doc.querySelectorAll(".compose-overlay").length, 0);
 });
 
+test("blocco V3: un file .eml in coda apre la sua finestra, «Rispondi» la composizione", async () => {
+  const w = await avvia([
+    {
+      tipo: "messaggio",
+      nomeFile: "salvato.eml",
+      oggetto: "Verbale",
+      da: "Anna <anna@esempio.it>",
+      a: "io@esempio.it",
+      cc: "",
+      data: null,
+      corpo: { html: "<p>Testo</p>", text: "Testo", attachments: [], immaginiBloccate: false },
+    },
+  ]);
+  assert.ok(w.doc.querySelector(".file-win"), "finestra del file aperta");
+  assert.equal(w.doc.querySelectorAll(".compose-overlay").length, 0, "nessuna bozza da sé");
+  w.doc.querySelector('[data-file-azione="rispondi"]').click();
+  await attesa();
+  assert.equal(w.doc.querySelector("#cmp-a").value, "Anna <anna@esempio.it>");
+  assert.equal(w.doc.querySelector("#cmp-oggetto").value, "R: Verbale");
+});
+
+test("blocco V3: le schede .vcf passano a contatti_importa_vcard solo al clic", async () => {
+  const w = await avvia([
+    { tipo: "contatti", nomeFile: "a.vcf", testo: "BEGIN:VCARD", schede: [{ nome: "Anna", email: "anna@esempio.it" }], senzaEmail: 0 },
+  ]);
+  const chiamate = [];
+  const originale = window.__TAURI__.core.invoke;
+  window.__TAURI__.core.invoke = async (nome, args) => {
+    if (nome === "contatti_importa_vcard") {
+      chiamate.push(args);
+      return { importati: 1, aggiornati: 0 };
+    }
+    return originale(nome, args);
+  };
+  assert.deepEqual(chiamate, []);
+  w.doc.querySelector('[data-file-azione="importa"]').click();
+  await attesa();
+  assert.deepEqual(chiamate, [{ testo: "BEGIN:VCARD" }]);
+});
+
 test("a app aperta l'evento aperture-esterne ritira la coda e apre la composizione", async () => {
   const w = await avvia([]);
   assert.equal(typeof w.ascoltatori["aperture-esterne"], "function");

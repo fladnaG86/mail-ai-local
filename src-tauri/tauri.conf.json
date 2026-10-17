@@ -31,6 +31,29 @@
       "signingIdentity": "-",
       "entitlements": "Entitlements.plist"
     },
+    "fileAssociations": [
+      {
+        "ext": ["eml"],
+        "name": "Messaggio di posta",
+        "contentTypes": ["public.email-message", "com.apple.mail.email"],
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["ics"],
+        "name": "Evento di calendario",
+        "contentTypes": ["com.apple.ical.ics"],
+        "role": "Viewer",
+        "rank": "Alternate"
+      },
+      {
+        "ext": ["vcf", "vcard"],
+        "name": "Scheda contatto",
+        "contentTypes": ["public.vcard"],
+        "role": "Viewer",
+        "rank": "Alternate"
+      }
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

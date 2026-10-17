@@ -53,6 +53,7 @@ import {
 } from "./views/cartelle-account.js";
 import { creaAggiornaDock } from "./views/dock.js";
 import { analizzaMailto, EVENTO_APERTURE } from "./views/apertura-esterna.js";
+import { apriFinestraFile } from "./views/apertura-file.js";
 import { apriPannelloNotifiche } from "./views/notifiche.js";
 import {
   apriAssistenteIA,
@@ -3630,9 +3631,20 @@ function collegaAvanzamentoSync() {
   });
 }
 
+/** Apre la composizione con campi arrivati da fuori (mai invio automatico). */
+async function componiDaEsterno(campi) {
+  apriComposizione({
+    ...campi,
+    mittente: await mittenteAccount(),
+    onInvia: inviaConKernel,
+    onControllo: controlloPreInvio,
+  });
+}
+
 /**
- * Blocco V2: ritira dal kernel le aperture arrivate dall'esterno e le esegue.
- * Un `mailto:` apre la composizione già compilata (mai invio automatico).
+ * Blocco V2/V3: ritira dal kernel le aperture arrivate dall'esterno e le esegue.
+ * Un `mailto:` apre la composizione già compilata; un file (.eml, .ics, .vcf)
+ * apre la sua finestra, dove i contatti si importano solo su conferma.
  */
 async function ritiraAperture() {
   let elenco = [];
@@ -3642,14 +3654,15 @@ async function ritiraAperture() {
     return;
   }
   for (const apertura of Array.isArray(elenco) ? elenco : []) {
-    if (!apertura || apertura.tipo !== "mailto") continue;
-    const campi = analizzaMailto(apertura.url);
-    if (!campi) continue;
-    apriComposizione({
-      ...campi,
-      mittente: await mittenteAccount(),
-      onInvia: inviaConKernel,
-      onControllo: controlloPreInvio,
+    if (!apertura) continue;
+    if (apertura.tipo === "mailto") {
+      const campi = analizzaMailto(apertura.url);
+      if (campi) await componiDaEsterno(campi);
+      continue;
+    }
+    apriFinestraFile(apertura, {
+      onRispondi: componiDaEsterno,
+      onImporta: (testo) => window.__TAURI__.core.invoke("contatti_importa_vcard", { testo }),
     });
   }
 }

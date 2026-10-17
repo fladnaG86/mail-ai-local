@@ -5,7 +5,7 @@
  */
 
 /** Le barre del titolo delle finestre; il contenitore della finestra è il loro genitore. */
-const BARRE = ".compose-titlebar, .settings-titlebar, .rubrica-titlebar, .agenda-titlebar";
+const BARRE = ".compose-titlebar, .settings-titlebar, .rubrica-titlebar, .agenda-titlebar, .file-titlebar";
 
 /**
  * Tiene la finestra trascinata dentro lo schermo: `pos` è lo scarto dal centro.

@@ -899,7 +899,7 @@ fn mail_cerca(testo: String, limite: Option<u32>) -> Result<EsitoRicerca, String
 /// Corpo di un messaggio pronto per l'interfaccia: HTML **già sanificato**,
 /// testo di riserva e solo i metadati degli allegati (i byte si prendono al
 /// salvataggio, mai prima).
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MailBody {
     pub html: String,
@@ -911,7 +911,7 @@ pub struct MailBody {
 }
 
 /// Metadati di un allegato, come mostrati sotto il corpo del messaggio.
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MailAttachmentInfo {
     /// Posizione dell'allegato nel messaggio: identifica il file da salvare.

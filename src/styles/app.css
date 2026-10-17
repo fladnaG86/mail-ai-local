@@ -1607,6 +1607,45 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 .i1-btn--ok { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
 .i1-btn--ok:hover { background: var(--accent-hover); }
 
+/* Blocco V3: finestra dei file aperti dal Finder (.eml, .ics, .vcf). */
+.file-overlay {
+  position: fixed; inset: 0; z-index: 110;
+  background: rgba(0, 0, 0, .3);
+  display: flex; align-items: center; justify-content: center;
+}
+.file-win {
+  width: 720px; height: 560px;
+  max-width: calc(100vw - 24px); max-height: calc(100vh - 24px);
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--window-bg); color: var(--text-primary);
+  border: 1px solid var(--pane-sep); border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .45); font-size: 13px;
+}
+.file-titlebar {
+  flex: 0 0 auto; height: 40px; box-sizing: border-box;
+  display: flex; align-items: center; padding: 0 12px;
+  background: var(--chrome-bg); font-weight: 600;
+  cursor: grab; user-select: none;
+}
+.file-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-contenuto {
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+  display: flex; flex-direction: column; gap: 4px; padding: 12px 16px;
+}
+.file-oggetto { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.file-riga { line-height: 1.5; }
+.file-etichetta { color: var(--text-secondary); }
+.file-corpo {
+  flex: 1 1 auto; min-height: 200px; margin-top: 8px;
+  border: 1px solid var(--pane-sep); border-radius: 6px; background: #fff;
+}
+.file-allegati, .file-eventi, .file-contatti { margin: 8px 0 0; padding-left: 18px; line-height: 1.6; }
+.file-evento { margin-bottom: 10px; }
+.file-email { color: var(--text-secondary); }
+.file-nota { margin: 8px 0 0; color: var(--text-secondary); line-height: 1.5; }
+.file-esito { margin: 8px 0 0; }
+.file-azioni { padding: 10px 16px; border-top: 1px solid var(--pane-sep); }
+
 /* Varianti dell'accento «premuto» e «disattivato»: le deriva `aspetto.js`
    (`--accent-pressed`, `--accent-disabled`) e qui si consumano, come l'`:hover`
    già fa con `--accent-hover`; senza queste regole i due token restavano morti. */
