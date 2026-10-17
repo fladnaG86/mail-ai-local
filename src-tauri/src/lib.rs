@@ -356,6 +356,7 @@ pub struct AvanzamentoSync {
 #[tauri::command]
 async fn mail_sync(
     account_id: String,
+    solo_cartella: Option<String>,
     app: tauri::AppHandle,
 ) -> Result<mail::sync::SyncSummary, String> {
     let account = config::load_accounts(&app_config_dir())
@@ -365,8 +366,14 @@ async fn mail_sync(
     let sorgente = mail::imap::ImapSource::from_account(&account, &secrets::Store::real())
         .map_err(|e| e.to_string())?;
 
-    let cartelle = sorgente.folders().await.map_err(|e| e.to_string())?;
+    let mut cartelle = sorgente.folders().await.map_err(|e| e.to_string())?;
+    // I nomi di tutte le cartelle servono comunque (Posta indesiderata, eliminata).
     let nomi: Vec<String> = cartelle.iter().map(|c| c.name.clone()).collect();
+    // Blocco W: all'avviso push si sincronizza solo la cartella sorvegliata
+    // (la Posta in arrivo), non tutto l'account.
+    if let Some(sola) = solo_cartella.as_deref() {
+        cartelle.retain(|c| c.name == sola);
+    }
     // Cartella della posta indesiderata, se il server ne ha una: è la destinazione
     // della protezione quando è attiva.
     let indesiderata = mail::ops::trova_cartella(&nomi, mail::ops::NOMI_INDESIDERATA);
@@ -615,7 +622,7 @@ async fn mail_sync_tutti(app: tauri::AppHandle) -> Result<Vec<EsitoSyncAccount>,
     let accounts = config::load_accounts(&app_config_dir());
     Ok(sync_tutti_con(accounts, |account| {
         let app = app.clone();
-        async move { mail_sync(account.id.clone(), app).await }
+        async move { mail_sync(account.id.clone(), None, app).await }
     })
     .await)
 }
@@ -3640,12 +3647,135 @@ fn aperture_in_attesa(coda: tauri::State<'_, aperture::Coda>) -> Vec<aperture::A
     coda.svuota()
 }
 
+// ---------------------------------------------------------------------------
+// Blocco W2: posta in push. Un task per casella tiene un `IDLE` sulla Posta in
+// arrivo (`mail::imap::ImapIdle` nel ciclo `mail::push::ciclo`); all'avviso
+// emette `posta-push` e l'interfaccia sincronizza quella casella. Gli stati
+// vanno al pannello con `push-stato` e si rileggono con `push_stato`.
+// ---------------------------------------------------------------------------
+
+/// Evento: nella Posta in arrivo della casella (payload: id account) c'è del nuovo.
+pub const EVENTO_POSTA_PUSH: &str = "posta-push";
+/// Evento: è cambiato lo stato del push di una casella (`StatoPushAccount`).
+pub const EVENTO_STATO_PUSH: &str = "push-stato";
+
+/// Lo stato del push di una casella, per il pannello.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StatoPushAccount {
+    pub account: String,
+    #[serde(flatten)]
+    pub stato: mail::push::StatoPush,
+}
+
+/// I task push attivi e l'ultimo stato di ciascuno.
+#[derive(Default)]
+struct PushAttivi {
+    compiti: std::sync::Mutex<std::collections::HashMap<String, tauri::async_runtime::JoinHandle<()>>>,
+    stati: std::sync::Arc<std::sync::Mutex<std::collections::BTreeMap<String, mail::push::StatoPush>>>,
+}
+
+impl PushAttivi {
+    fn istantanea(&self) -> Vec<StatoPushAccount> {
+        self.stati
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .iter()
+            .map(|(account, stato)| StatoPushAccount { account: account.clone(), stato: stato.clone() })
+            .collect()
+    }
+}
+
+/// Allinea i task push alle preferenze: con `syncPush` acceso uno per casella,
+/// spento nessuno. `riavvia` ferma e riavvia tutti (dopo una modifica di un
+/// account: credenziali o server nuovi). Un task che si è fermato da solo
+/// (server senza IDLE, password rifiutata) **non** si riavvia senza `riavvia`,
+/// così non si martella il server.
+#[tauri::command]
+fn push_riconcilia(
+    riavvia: Option<bool>,
+    app: tauri::AppHandle,
+    push: tauri::State<'_, PushAttivi>,
+) -> Vec<StatoPushAccount> {
+    let pref = config::load_preferenze(&app_config_dir());
+    let accounts = config::load_accounts(&app_config_dir());
+    let desiderati: std::collections::BTreeSet<String> = if pref.sync_push {
+        accounts.iter().map(|a| a.id.clone()).collect()
+    } else {
+        Default::default()
+    };
+
+    let mut compiti = push.compiti.lock().unwrap_or_else(|e| e.into_inner());
+    if riavvia.unwrap_or(false) {
+        for (_, compito) in compiti.drain() {
+            compito.abort();
+        }
+        push.stati.lock().unwrap_or_else(|e| e.into_inner()).clear();
+    }
+    let attivi: std::collections::BTreeSet<String> = compiti.keys().cloned().collect();
+    let (avvia, ferma) = mail::push::riconcilia(&attivi, &desiderati);
+    for id in ferma {
+        if let Some(compito) = compiti.remove(&id) {
+            compito.abort();
+        }
+        push.stati.lock().unwrap_or_else(|e| e.into_inner()).remove(&id);
+    }
+    for id in avvia {
+        let Some(account) = accounts.iter().find(|a| a.id == id) else { continue };
+        let stati = std::sync::Arc::clone(&push.stati);
+        let imposta = {
+            let app = app.clone();
+            let id = id.clone();
+            move |stato: mail::push::StatoPush| {
+                stati.lock().unwrap_or_else(|e| e.into_inner()).insert(id.clone(), stato.clone());
+                let _ = app.emit(EVENTO_STATO_PUSH, StatoPushAccount { account: id.clone(), stato });
+            }
+        };
+        let sorgente = match mail::imap::ImapSource::from_account(account, &secrets::Store::real()) {
+            Ok(s) => s,
+            Err(e) => {
+                imposta(mail::push::StatoPush::Errore { errore: e.to_string() });
+                continue;
+            }
+        };
+        let app = app.clone();
+        let account_id = id.clone();
+        let compito = tauri::async_runtime::spawn(async move {
+            let mut canale = mail::imap::ImapIdle::new(sorgente);
+            mail::push::ciclo(
+                &mut canale,
+                |evento| {
+                    match evento {
+                        mail::push::EventoPush::Stato(stato) => imposta(stato),
+                        mail::push::EventoPush::NuoviDati => {
+                            let _ = app.emit(EVENTO_POSTA_PUSH, account_id.clone());
+                        }
+                    }
+                    true // il task si ferma con `abort`, non dall'interno
+                },
+                tokio::time::sleep,
+            )
+            .await;
+        });
+        compiti.insert(id, compito);
+    }
+    drop(compiti);
+    push.istantanea()
+}
+
+/// Lo stato attuale del push di ogni casella (per il pannello Sincronizzazione).
+#[tauri::command]
+fn push_stato(push: tauri::State<'_, PushAttivi>) -> Vec<StatoPushAccount> {
+    push.istantanea()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .manage(aperture::Coda::default())
+        .manage(PushAttivi::default())
         .setup(|app| {
             // Blocco I2: avvia il pianificatore degli invii programmati. Gira
             // mentre l'app è aperta; un invio dovuto parte entro ~30 secondi.
@@ -3752,7 +3882,9 @@ pub fn run() {
             scelte_rapide,
             diagnostica_account,
             diagnostica_smtp,
-            aperture_in_attesa
+            aperture_in_attesa,
+            push_riconcilia,
+            push_stato
         ])
         .build(tauri::generate_context!())
         .expect("errore nell'avvio dell'applicazione")

@@ -755,6 +755,9 @@ pub struct Preferenze {
     /// Esegue una sincronizzazione all'avvio dell'app (attivo di default: è il
     /// comportamento storico dell'app, che al lancio ha sempre sincronizzato).
     pub sync_all_avvio: bool,
+    /// Blocco W: posta in push (IMAP IDLE) sulla Posta in arrivo di ogni casella.
+    /// Spenta di default: tiene una connessione aperta dall'avvio dell'app.
+    pub sync_push: bool,
     /// Soglia di avviso sulla dimensione della cache locale, in MB (0 = mai).
     pub archiviazione_avviso_mb: i64,
     // --- Blocco O: categorie definite dall'utente (nome + colore) ---
@@ -849,6 +852,7 @@ impl Default for Preferenze {
             ricerca_mentre_si_digita: true,
             sync_intervallo_minuti: SYNC_INTERVALLO_DEFAULT,
             sync_all_avvio: true,
+            sync_push: false,
             archiviazione_avviso_mb: ARCHIVIAZIONE_AVVISO_MB_DEFAULT,
             categorie: categorie_predefinite(),
             accento: ACCENTO_DEFAULT.to_string(),

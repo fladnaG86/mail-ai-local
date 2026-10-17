@@ -197,6 +197,28 @@ fn riconcilia_avvia_i_mancanti_e_ferma_quelli_in_piu() {
     assert_eq!(ferma, vec!["a".to_string()], "push spento: si ferma tutto");
 }
 
+// ---------------------------------------------------------------------------
+// Blocco W2: la preferenza. Spenta di default: con il push l'app tiene una
+// connessione aperta dall'avvio, e senza una scelta esplicita non tocca la rete.
+// ---------------------------------------------------------------------------
+
+use outlook_ai_lib::config::Preferenze;
+
+#[test]
+fn il_push_e_spento_di_default_anche_in_un_config_vecchio() {
+    assert!(!Preferenze::default().sync_push);
+    let vecchio: Preferenze = serde_json::from_str("{}").unwrap();
+    assert!(!vecchio.sync_push);
+}
+
+#[test]
+fn il_push_acceso_si_legge_e_si_riscrive_come_sync_push() {
+    let p: Preferenze = serde_json::from_str(r#"{"syncPush":true}"#).unwrap();
+    assert!(p.sync_push);
+    let json = serde_json::to_value(&p).unwrap();
+    assert_eq!(json["syncPush"], serde_json::json!(true));
+}
+
 #[test]
 fn lo_stato_si_serializza_nella_forma_dell_interfaccia() {
     let json = serde_json::to_value(StatoPush::Riconnessione {

@@ -106,6 +106,66 @@ impl ImapSource {
     }
 }
 
+/// Blocco W2: il canale push di una casella sopra IMAP IDLE (RFC 2177).
+///
+/// Ha una connessione **sua**, separata da quelle della sincronizzazione: resta
+/// in `IDLE` sulla Posta in arrivo e avvisa; a sincronizzare pensa `mail_sync`.
+pub struct ImapIdle {
+    sorgente: ImapSource,
+    handle: Option<async_imap::extensions::idle::Handle<TlsStream<TcpStream>>>,
+}
+
+impl ImapIdle {
+    pub fn new(sorgente: ImapSource) -> Self {
+        ImapIdle { sorgente, handle: None }
+    }
+}
+
+#[async_trait]
+impl crate::mail::push::CanalePush for ImapIdle {
+    async fn connetti(&mut self) -> Result<crate::mail::push::Supporto> {
+        use crate::mail::push::Supporto;
+        // Una connessione precedente (caduta) si abbandona: chiuderla potrebbe bloccare.
+        self.handle = None;
+        let mut sessione = self.sorgente.connect().await?;
+        let capacita = sessione.capabilities().await.map_err(errore_imap)?;
+        if !capacita.has_str("IDLE") {
+            let _ = sessione.logout().await;
+            return Ok(Supporto::NonSupportato);
+        }
+        sessione.select("INBOX").await.map_err(errore_imap)?;
+        let mut handle = sessione.idle();
+        handle.init().await.map_err(errore_imap)?;
+        self.handle = Some(handle);
+        Ok(Supporto::Idle)
+    }
+
+    async fn attendi(&mut self, massimo: std::time::Duration) -> Result<crate::mail::push::Attesa> {
+        use crate::mail::push::Attesa;
+        use async_imap::extensions::idle::IdleResponse;
+        let handle = self
+            .handle
+            .as_mut()
+            .ok_or_else(|| MailError::Rete("canale push non connesso".into()))?;
+        // `stop` va tenuto vivo per tutta l'attesa: lasciarlo cadere la interrompe.
+        let (attesa, stop) = handle.wait_with_timeout(massimo);
+        let risposta = attesa.await.map_err(errore_imap)?;
+        drop(stop);
+        match risposta {
+            IdleResponse::NewData(_) => Ok(Attesa::NuoviDati),
+            IdleResponse::Timeout | IdleResponse::ManualInterrupt => {
+                // Rinnovo: DONE e di nuovo IDLE, prima che il server chiuda (29 minuti).
+                let handle = self.handle.take().expect("handle presente");
+                let sessione = handle.done().await.map_err(errore_imap)?;
+                let mut nuovo = sessione.idle();
+                nuovo.init().await.map_err(errore_imap)?;
+                self.handle = Some(nuovo);
+                Ok(Attesa::Scaduta)
+            }
+        }
+    }
+}
+
 #[async_trait]
 impl MailSource for ImapSource {
     async fn folders(&self) -> Result<Vec<Folder>> {
