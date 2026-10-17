@@ -21,7 +21,7 @@ use config::Account;
 use mail::MailSource;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 /// Cartella di configurazione dell'app (es. ~/Library/Application Support/outlook-ai su macOS).
 pub fn app_config_dir() -> PathBuf {
@@ -331,7 +331,24 @@ fn account_predefinito_letto() -> Option<Account> {
     config::account_predefinito(&app_config_dir())
 }
 
+/// Nome dell'evento con cui `mail_sync` annuncia la cartella che sta scaricando.
+pub const EVENTO_AVANZAMENTO_SYNC: &str = "sync-avanzamento";
+
+/// Avanzamento di «Invia e ricevi»: la cartella `indice` (da 0) di `totale`
+/// dell'account. Il pannello lo mostra nella barra di stato.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AvanzamentoSync {
+    pub account: String,
+    pub cartella: String,
+    pub indice: usize,
+    pub totale: usize,
+}
+
 /// Sincronizza le intestazioni dell'account dalla sua casella IMAP.
+///
+/// Prima di ogni cartella emette `EVENTO_AVANZAMENTO_SYNC`: un evento perso non
+/// ferma la sincronizzazione, toglie solo un passo alla barra.
 ///
 /// La rete (asincrona) e la cache (sincrona) non si incrociano: si scaricano le
 /// intestazioni di ogni cartella e solo dopo si scrive sulla connessione SQLite.
@@ -361,7 +378,16 @@ async fn mail_sync(
     // Messaggi nuovi candidati alla notifica (blocco E): la decisione si prende
     // **dopo** la sincronizzazione, fuori dal ciclo di rete.
     let mut candidati: Vec<notifiche::Candidato> = Vec::new();
-    for cartella in &cartelle {
+    for (indice, cartella) in cartelle.iter().enumerate() {
+        let _ = app.emit(
+            EVENTO_AVANZAMENTO_SYNC,
+            AvanzamentoSync {
+                account: account_id.clone(),
+                cartella: cartella.name.clone(),
+                indice,
+                totale: cartelle.len(),
+            },
+        );
         let headers = mail::sync::fetch_folder(&sorgente, &cartella.name, LIMITE_INTESTAZIONI)
             .await
             .map_err(|e| e.to_string())?;

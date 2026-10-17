@@ -513,7 +513,34 @@ html[data-tauri] .titlebar { padding-left: 78px; }
   font-size: 11px;
   color: var(--text-secondary);
 }
-.statusbar-right { margin-left: auto; display: flex; gap: 26px; }
+.statusbar-right { margin-left: auto; display: flex; align-items: center; gap: 26px; }
+
+/* Avanzamento di «Invia e ricevi»: si riempie cartella per cartella; prima del
+   primo evento del kernel è indeterminato, a strisce che scorrono. */
+.sync-progress {
+  width: 140px;
+  height: 6px;
+  margin-right: -16px;
+  border-radius: 3px;
+  background: var(--btn-border);
+  overflow: hidden;
+}
+.sync-progress[hidden] { display: none; }
+.sync-progress-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width .3s ease;
+}
+.sync-progress--indeterminato .sync-progress-fill {
+  width: 100%;
+  background: repeating-linear-gradient(-45deg, var(--accent) 0 6px, transparent 6px 12px);
+  background-size: 17px 100%;
+  animation: sync-strisce .6s linear infinite;
+}
+@keyframes sync-strisce { to { background-position: 17px 0; } }
 
 /* ---------- finestra di composizione (Milestone 5) ---------- */
 .compose-overlay {

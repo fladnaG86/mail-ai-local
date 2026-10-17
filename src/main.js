@@ -142,6 +142,7 @@ import {
   deveSincronizzareAvvio,
 } from "./views/sincronizzazione.js";
 import { apriPannelloArchiviazione } from "./views/archiviazione.js";
+import { EVENTO_AVANZAMENTO_SYNC, statoAvanzamento } from "./views/avanzamento-sync.js";
 import { apriPannelloAspetto, applicaAccento, normAccento } from "./views/aspetto.js";
 import {
   apriPannelloAccessibilita,
@@ -3496,14 +3497,86 @@ function apriFiltro(ancora) {
  * credenziali sbagliate non nasconde le altre. Al termine la barra laterale e la
  * lista si aggiornano (i conteggi dei non letti vengono dalla cache appena scritta).
  */
+// ---------------------------------------------------------------------------
+// Avanzamento di «Invia e ricevi» nella barra di stato
+// ---------------------------------------------------------------------------
+
+let barraSyncEl = null;
+/** Le caselle di «Invia e ricevi» in corso; `null` a riposo, così la sincronizzazione automatica non accende la barra. */
+let caselleInSync = null;
+/** Quanto la barra resta piena prima di sparire. */
+const BARRA_SYNC_CHIUSURA_MS = 500;
+
+/** Mostra la barra: `frazione` 0..1, o `null` per l'avanzamento indeterminato. */
+function mostraAvanzamentoSync(frazione) {
+  if (!barraSyncEl) return;
+  const indeterminato = frazione === null;
+  barraSyncEl.hidden = false;
+  barraSyncEl.classList.toggle("sync-progress--indeterminato", indeterminato);
+  const riempimento = barraSyncEl.querySelector(".sync-progress-fill");
+  if (indeterminato) {
+    barraSyncEl.removeAttribute("aria-valuenow");
+    if (riempimento) riempimento.style.width = "";
+    return;
+  }
+  const percento = Math.round(Math.max(0, Math.min(1, frazione)) * 100);
+  barraSyncEl.setAttribute("aria-valuenow", String(percento));
+  if (riempimento) riempimento.style.width = `${percento}%`;
+}
+
+/** Fine di «Invia e ricevi»: la barra si riempie, poi sparisce (se nel frattempo non ne è partito un altro). */
+function chiudiAvanzamentoSync() {
+  caselleInSync = null;
+  mostraAvanzamentoSync(1);
+  setTimeout(() => {
+    if (!caselleInSync && barraSyncEl) barraSyncEl.hidden = true;
+  }, BARRA_SYNC_CHIUSURA_MS);
+}
+
+/** Ascolta gli eventi `sync-avanzamento` del kernel (solo dentro Tauri). */
+function collegaAvanzamentoSync() {
+  barraSyncEl = document.querySelector("#sync-progress");
+  const eventi = window.__TAURI__ && window.__TAURI__.event;
+  if (!eventi || typeof eventi.listen !== "function") return;
+  eventi.listen(EVENTO_AVANZAMENTO_SYNC, (e) => {
+    if (!caselleInSync || !e || !e.payload) return;
+    const { frazione, testo } = statoAvanzamento(e.payload, caselleInSync);
+    mostraAvanzamentoSync(frazione);
+    stato(testo);
+  });
+}
+
+/** Nel browser non c'è kernel: la barra scorre su cartelle d'esempio, per la prova visiva. */
+async function avanzamentoDiProva() {
+  const cartelle = ["INBOX", "Posta inviata", "Bozze", "Archivio"];
+  const caselle = [{ id: "", email: "" }];
+  for (let indice = 0; indice < cartelle.length; indice++) {
+    const { frazione, testo } = statoAvanzamento({ account: "", cartella: cartelle[indice], indice, totale: cartelle.length }, caselle);
+    mostraAvanzamentoSync(frazione);
+    stato(testo);
+    await new Promise((r) => setTimeout(r, 400));
+  }
+}
+
 async function inviaERicevi() {
+  mostraAvanzamentoSync(null);
+  try {
+    await eseguiInviaERicevi();
+  } finally {
+    chiudiAvanzamentoSync();
+  }
+}
+
+async function eseguiInviaERicevi() {
   if (!dentroTauri()) {
     stato("Invio e ricezione in corso…");
+    await avanzamentoDiProva();
     stato("Prova visiva: l'invio e la ricezione richiedono l'app avviata.");
     return;
   }
   stato("Invio e ricezione in corso…");
   const accounts = await accountConfigurati();
+  caselleInSync = accounts;
   if (accounts.length <= 1) {
     const esito = await sincronizzaOra(accounts.length ? accounts[0].id : null);
     stato(esito, /non riuscit|errore|impossibile|rifiut/i.test(esito));
@@ -3636,6 +3709,7 @@ export async function boot() {
   collegaRicerca();
   collegaSplitter();
   collegaFiltriRapidi();
+  collegaAvanzamentoSync();
 
   // Preferenze dell'utente (Milestone 8): tema, firma, assistente. Il tema lo
   // applica `initTheme`; qui si caricano le preferenze e si collegano le
