@@ -2,7 +2,7 @@
 
 ## Per chi riceve l'app
 
-1. Apri la pagina [Releases](https://github.com/fladnaG86/mail-ai-local/releases) e scarica il file `Outlook AI_<versione>_universal.dmg`. Va bene sia per i Mac Apple Silicon sia per gli Intel (provata su macOS recente, Apple Silicon).
+1. Apri la pagina [Releases](https://github.com/fladnaG86/mail-ai-local/releases) e scarica il file `Outlook.AI_<versione>_universal.dmg`. Va bene sia per i Mac Apple Silicon sia per gli Intel (provata su macOS recente, Apple Silicon).
 2. Apri il `.dmg` e trascina **Outlook AI** nella cartella **Applicazioni**.
 3. **Primo avvio.** Finché l'app non è firmata con un certificato Apple Developer, macOS dice che non può verificare lo sviluppatore e non la apre. Una volta sola:
    - prova ad aprirla, e chiudi l'avviso;
