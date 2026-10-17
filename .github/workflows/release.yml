@@ -1,0 +1,92 @@
+# Compila l'app per macOS e la pubblica in una Release di GitHub.
+#
+# Parte a ogni tag `v*` (es. `git tag v0.2.0 && git push origin v0.2.0`) o a mano
+# da Actions → Release → Run workflow. Prima della build girano tutti i test.
+# Il risultato è un `.dmg` universale (Apple Silicon + Intel) in una Release in
+# bozza: la si controlla e la si pubblica da GitHub.
+#
+# Firma: senza segreti l'app è firmata ad-hoc (funziona, ma al primo avvio macOS
+# chiede «Apri comunque»: vedi docs/installazione.md). Con un certificato
+# «Developer ID Application» di Apple nei segreti del repository viene firmata e
+# notarizzata, e si apre senza avvisi.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+
+      - run: npm ci
+
+      - name: Test dell'interfaccia
+        run: node --test tests/*.mjs
+
+      - name: Test del kernel
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      # I segreti Apple si passano solo se ci sono: una variabile vuota farebbe
+      # firmare con un'identità vuota, e la build fallirebbe.
+      - name: Firma Apple, se configurata
+        env:
+          CERT: ${{ secrets.APPLE_CERTIFICATE }}
+          CERT_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          IDENTITA: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          ID: ${{ secrets.APPLE_ID }}
+          PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$CERT" ] && [ -n "$IDENTITA" ]; then
+            {
+              echo "APPLE_CERTIFICATE=$CERT"
+              echo "APPLE_CERTIFICATE_PASSWORD=$CERT_PASSWORD"
+              echo "APPLE_SIGNING_IDENTITY=$IDENTITA"
+            } >> "$GITHUB_ENV"
+            echo "Firma con Developer ID."
+          else
+            echo "Nessun certificato Apple nei segreti: firma ad-hoc."
+          fi
+          if [ -n "$ID" ] && [ -n "$PASSWORD" ] && [ -n "$TEAM" ]; then
+            {
+              echo "APPLE_ID=$ID"
+              echo "APPLE_PASSWORD=$PASSWORD"
+              echo "APPLE_TEAM_ID=$TEAM"
+            } >> "$GITHUB_ENV"
+            echo "Notarizzazione attiva."
+          fi
+
+      - name: Compila e pubblica
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__
+          releaseName: Mail AI Local v__VERSION__
+          releaseBody: |
+            App per macOS, Apple Silicon e Intel (provata su macOS recente, Apple Silicon).
+            Scarica il file `.dmg` qui sotto e segui le istruzioni di installazione:
+            https://github.com/${{ github.repository }}/blob/main/docs/installazione.md
+          releaseDraft: true
+          prerelease: false
+          args: --target universal-apple-darwin --bundles app,dmg

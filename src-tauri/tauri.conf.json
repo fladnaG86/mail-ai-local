@@ -28,7 +28,7 @@
     "active": true,
     "targets": ["app"],
     "macOS": {
-      "signingIdentity": "Outlook AI Dev"
+      "signingIdentity": "-"
     },
     "icon": [
       "icons/32x32.png",

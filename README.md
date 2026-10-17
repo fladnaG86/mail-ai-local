@@ -61,8 +61,13 @@ La prima compilazione richiede qualche minuto. Alla prima apertura si apre da s�
 Per la build dell'app:
 
 ```bash
-npm run tauri build
+npm run tauri build    # firma ad-hoc, su qualsiasi Mac
+npm run build:mac      # firma col certificato locale «Outlook AI Dev», se c'è
 ```
+
+## Scaricare l'app già pronta
+
+Ogni versione è compilata da GitHub Actions e pubblicata in [Releases](https://github.com/fladnaG86/mail-ai-local/releases) come `.dmg` universale (Apple Silicon e Intel). Installazione, primo avvio e pubblicazione di una nuova versione: [docs/installazione.md](docs/installazione.md).
 
 ## Assistente IA
 

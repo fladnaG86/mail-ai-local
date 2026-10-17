@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "build:mac": "APPLE_SIGNING_IDENTITY=\"Outlook AI Dev\" tauri build --bundles app",
+    "test": "node --test tests/*.mjs && cargo test --manifest-path src-tauri/Cargo.toml"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
