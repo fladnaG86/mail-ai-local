@@ -781,6 +781,8 @@ pub struct Preferenze {
     /// Numero di suggerimenti nel completamento dei destinatari
     /// (`CONTATTI_SUGGERIMENTI_MIN..MAX`).
     pub contatti_suggerimenti_limite: i64,
+    /// Blocco U5: dopo un invio, aggiungere alla rubrica i destinatari nuovi.
+    pub rubrica_aggiunta_automatica: bool,
 }
 
 impl Default for Preferenze {
@@ -857,6 +859,7 @@ impl Default for Preferenze {
             rubrica_ordinamento: ORDINAMENTO_RUBRICA_DEFAULT.to_string(),
             rubrica_formato_nome: FORMATO_NOME_CONTATTO_DEFAULT.to_string(),
             contatti_suggerimenti_limite: CONTATTI_SUGGERIMENTI_DEFAULT,
+            rubrica_aggiunta_automatica: true,
         }
     }
 }

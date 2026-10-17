@@ -1403,6 +1403,8 @@ html[data-tauri] .titlebar { padding-left: 78px; }
 .rubrica-recapito { display: grid; grid-template-columns: 100px 1fr auto; gap: 6px; align-items: center; margin-bottom: 4px; }
 .rubrica-recapito input { width: 100%; box-sizing: border-box; }
 .rubrica-recapito-togli { border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; padding: 2px 6px; }
+.rubrica-auto { font-size: 10px; color: var(--text-secondary); border: 1px solid var(--btn-border); border-radius: 8px; padding: 0 6px; margin-left: 6px; }
+.rubrica-filtro { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-secondary); }
 .rubrica-link { border: 0; background: transparent; color: var(--accent); cursor: pointer; padding: 2px 0; font-size: 11px; }
 .rubrica-modulo-azioni { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 .rubrica-nota {

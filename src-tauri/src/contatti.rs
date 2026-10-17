@@ -575,6 +575,44 @@ fn scheda_da(prop: &[(String, String, String)]) -> SchedaVcard {
 
 /// Il nome visualizzato dentro un indirizzo "Nome <utente@host>" (vuoto se non
 /// c'è un nome).
+/// Blocco U5: i contatti da aggiungere alla rubrica dopo un invio, dai campi
+/// A/Cc/Ccn («Nome <indirizzo>» o solo l'indirizzo). Indirizzi in minuscolo,
+/// senza doppioni, senza `escludi` (il proprio indirizzo) e senza ciò che non
+/// è un indirizzo; origine «automatico».
+pub fn contatti_da_destinatari(destinatari: &[String], escludi: &str) -> Vec<Contatto> {
+    let escludi = escludi.trim().to_ascii_lowercase();
+    let mut out: Vec<Contatto> = Vec::new();
+    for grezzo in destinatari {
+        let Some(email) = estrai_indirizzo(grezzo) else {
+            continue;
+        };
+        let email = email.trim().to_ascii_lowercase();
+        let valido = matches!(email.split_once('@'), Some((l, d)) if !l.is_empty() && d.contains('.'));
+        if !valido || email == escludi || out.iter().any(|c| c.email == email) {
+            continue;
+        }
+        let (nome, cognome) = dividi_nome(&nome_da_indirizzo(grezzo));
+        out.push(Contatto { nome, cognome, email, origine: "automatico".to_string(), ..Default::default() });
+    }
+    out
+}
+
+/// «Luca Bianchi» → (Luca, Bianchi); «Rossi, Mario» → (Mario, Rossi); un nome
+/// che è un indirizzo non è un nome.
+fn dividi_nome(n: &str) -> (String, String) {
+    let n = n.trim();
+    if n.is_empty() || n.contains('@') {
+        return (String::new(), String::new());
+    }
+    if let Some((cognome, nome)) = n.split_once(',') {
+        return (nome.trim().to_string(), cognome.trim().to_string());
+    }
+    match n.split_once(char::is_whitespace) {
+        Some((nome, cognome)) => (nome.trim().to_string(), cognome.trim().to_string()),
+        None => (n.to_string(), String::new()),
+    }
+}
+
 fn nome_da_indirizzo(grezzo: &str) -> String {
     match grezzo.find('<') {
         Some(i) => grezzo[..i].trim().trim_matches('"').trim().to_string(),

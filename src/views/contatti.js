@@ -430,10 +430,12 @@ function leggiRecapiti(contenitore) {
 function riga(contatto, formato) {
   const nome = nomeVisualizzato(contatto, formato) || "(senza nome)";
   const azienda = contatto.azienda ? `<span class="rubrica-azienda">${fuga(contatto.azienda)}</span>` : "";
+  // Blocco U5: un contatto entrato dopo un invio si riconosce.
+  const auto = contatto.origine === "automatico" ? `<span class="rubrica-auto" title="Aggiunto alla rubrica dopo un invio">aggiunto da sé</span>` : "";
   return `<div class="rubrica-riga" role="option" data-id="${contatto.id}">
       <span class="rubrica-nome">${fuga(nome)}</span>
       <span class="rubrica-mail">&lt;${fuga(contatto.email)}&gt;</span>
-      ${azienda}
+      ${auto}${azienda}
     </div>`;
 }
 
@@ -481,6 +483,7 @@ function markup() {
       <button type="button" class="rubrica-btn" data-az="importa">Importa vCard…</button>
       <button type="button" class="rubrica-btn" data-az="esporta">Esporta in vCard</button>
       <button type="button" class="rubrica-btn" data-az="gruppi">Gruppi…</button>
+      <label class="rubrica-filtro"><input type="checkbox" id="rubrica-solo-auto" /> Solo aggiunti automaticamente</label>
     </div>
     <div class="rubrica-corpo">
       <div class="rubrica-lista" id="rubrica-lista" role="listbox" aria-label="Contatti"></div>
@@ -533,11 +536,14 @@ export function apriRubrica(opzioni = {}) {
   };
   const chiudi = () => overlay.remove();
 
+  const soloAutoEl = overlay.querySelector("#rubrica-solo-auto");
+  soloAutoEl.addEventListener("change", () => disegnaLista());
   const disegnaLista = () => {
     const q = filtro.trim().toLowerCase();
+    const base = soloAutoEl.checked ? elenco.filter((c) => c.origine === "automatico") : elenco;
     const filtrati = !q
-      ? elenco
-      : elenco.filter((c) =>
+      ? base
+      : base.filter((c) =>
           [c.nome, c.cognome, c.email, c.azienda]
             .map((v) => String(v || "").toLowerCase())
             .some((v) => v.includes(q)),
@@ -547,7 +553,11 @@ export function apriRubrica(opzioni = {}) {
     const visibili = ordinaContatti(filtrati, ordinamento);
     if (!visibili.length) {
       listaEl.innerHTML = `<div class="rubrica-vuoto">${
-        q ? "Nessun contatto corrisponde alla ricerca." : "La rubrica è vuota: usa «Nuovo contatto» o «Importa vCard»."
+        q
+          ? "Nessun contatto corrisponde alla ricerca."
+          : soloAutoEl.checked
+            ? "Nessun contatto aggiunto automaticamente."
+            : "La rubrica è vuota: usa «Nuovo contatto» o «Importa vCard»."
       }</div>`;
       return;
     }

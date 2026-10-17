@@ -99,6 +99,8 @@ export function apriPannelloContatti(opzioni = {}) {
   const ordinamento = normOrdinamento(prefs.rubricaOrdinamento || ORDINAMENTO_RUBRICA_DEFAULT);
   const formato = normFormatoNome(prefs.rubricaFormatoNome || FORMATO_NOME_DEFAULT);
   const limite = normSuggerimentiLimite(prefs.contattiSuggerimentiLimite);
+  // Blocco U5: attiva se la preferenza non è mai stata salvata, come nel kernel.
+  const automatica = prefs.rubricaAggiuntaAutomatica !== false;
 
   const contenuto = `
     <div class="settings-sec">Rubrica</div>
@@ -114,6 +116,8 @@ export function apriPannelloContatti(opzioni = {}) {
       <div class="settings-lbl">Anteprima:</div>
       <div class="q-anteprima" id="q-anteprima" aria-live="polite">${fugaHtml(anteprimaFormato(formato, CONTATTO_ANTEPRIMA))}</div>
     </div>
+    <label class="ai-check"><input type="checkbox" id="q-auto"${automatica ? " checked" : ""}> Aggiungi alla rubrica le persone a cui scrivi</label>
+    <p class="im-nota">Dopo ogni invio riuscito, i destinatari che non sono ancora in rubrica vengono aggiunti e segnati «aggiunto da sé»; in rubrica si possono rivedere con il filtro «Solo aggiunti automaticamente». I contatti già presenti non cambiano.</p>
     <div class="settings-sec">Destinatari</div>
     <div class="settings-hr"></div>
     <p class="im-nota">Quanti suggerimenti mostrare sotto i campi A / Cc / Ccn mentre si scrive un indirizzo (dalla rubrica e dagli indirizzi già visti).</p>
@@ -141,6 +145,7 @@ export function apriPannelloContatti(opzioni = {}) {
       rubricaOrdinamento: normOrdinamento(q("#q-ordine").value),
       rubricaFormatoNome: normFormatoNome(q("#q-formato").value),
       contattiSuggerimentiLimite: normSuggerimentiLimite(q("#q-limite").value),
+      rubricaAggiuntaAutomatica: q("#q-auto").checked,
     };
     // Rimette i valori normalizzati nei campi (un numero scritto a mano fuori
     // scala torna al default invece di essere salvato com'è).

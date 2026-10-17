@@ -1263,7 +1263,35 @@ async fn componi_e_invia(
     .await
     .map_err(|e| e.to_string())?;
 
+    // Blocco U5: i destinatari nuovi entrano in rubrica. È un di più: se non
+    // riesce, l'invio resta riuscito.
+    if pref.rubrica_aggiunta_automatica {
+        let tutti: Vec<String> = destinatari.iter().chain(&copia).chain(&nascosta).cloned().collect();
+        let _ = aggiungi_destinatari_in(&cache_path(), &tutti, &account.email);
+    }
+
     Ok(esito.testo(&account))
+}
+
+/// Blocco U5: aggiunge alla rubrica i destinatari che non ci sono ancora (né
+/// come email principale né come altra), con origine «automatico». I contatti
+/// esistenti non si toccano. Restituisce quanti ne ha aggiunti.
+pub fn aggiungi_destinatari_in(
+    path_db: &Path,
+    destinatari: &[String],
+    escludi: &str,
+) -> Result<usize, String> {
+    let cache = store::Store::open(path_db).map_err(|e| e.to_string())?;
+    let mut aggiunti = 0;
+    for c in contatti::contatti_da_destinatari(destinatari, escludi) {
+        if cache.contatto_per_email(&c.email).map_err(|e| e.to_string())?.is_some() {
+            continue;
+        }
+        if cache.contatto_salva(&(&c).into()).is_ok() {
+            aggiunti += 1;
+        }
+    }
+    Ok(aggiunti)
 }
 
 /// Risultato di un'azione dell'assistente IA, pronto per l'interfaccia.
