@@ -48,6 +48,23 @@ impl CorpoMime {
     }
 }
 
+/// Decodifica le «encoded word» RFC 2047 (`=?utf-8?Q?...?=`) di un'intestazione
+/// di testo: oggetto, o mittente nella forma «Nome <indirizzo>». L'ENVELOPE IMAP
+/// le consegna così come sono nel messaggio. Il testo già in chiaro resta
+/// identico, quindi applicarla più volte non cambia nulla.
+pub fn decodifica_intestazione(testo: &str) -> String {
+    if !testo.contains("=?") {
+        return testo.to_string();
+    }
+    // Si fa leggere il testo a mail-parser come un'intestazione non strutturata:
+    // è lui a sapere charset, Q/B e spazi fra encoded word adiacenti.
+    let grezzo = format!("Subject: {testo}\r\n\r\n");
+    MessageParser::default()
+        .parse(grezzo.as_bytes())
+        .and_then(|m| m.subject().map(str::to_string))
+        .unwrap_or_else(|| testo.to_string())
+}
+
 /// Analizza un messaggio grezzo e ne estrae testo, HTML e allegati.
 ///
 /// Un messaggio non interpretabile produce una `CorpoMime` vuota invece di un

@@ -179,7 +179,7 @@ impl MailSource for ImapSource {
             let data = elemento.internal_date().map(|d| d.timestamp()).unwrap_or(0);
             let (oggetto, da, a, message_id, in_reply_to) = match elemento.envelope() {
                 Some(env) => (
-                    testo(env.subject.as_deref()),
+                    testo(env.subject.as_deref()).map(|s| super::mime::decodifica_intestazione(&s)),
                     env.from.as_deref().map(indirizzi),
                     env.to.as_deref().map(indirizzi),
                     testo(env.message_id.as_deref()),
@@ -496,7 +496,7 @@ fn format_address(a: &async_imap::imap_proto::Address<'_>) -> String {
     let nome = a
         .name
         .as_deref()
-        .map(|b| String::from_utf8_lossy(b).into_owned());
+        .map(|b| super::mime::decodifica_intestazione(&String::from_utf8_lossy(b)));
     let indirizzo = if host.is_empty() {
         mailbox
     } else {

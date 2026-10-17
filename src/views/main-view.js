@@ -9,6 +9,7 @@ import {
   statoRiga,
   fugaHtml,
   htmlCelleMessaggio,
+  nomeEmail,
   chiaveIconaCartella,
   svgIconaCartella,
   NON_DISPONIBILI_V1,
@@ -646,7 +647,7 @@ export function renderReading(root, message, opzioni = {}) {
     return;
   }
 
-  root.append(el("div", "mail-subject", message.subject));
+  root.append(el("div", "mail-subject", fugaHtml(message.subject)));
 
   // Targhette delle categorie sotto l'oggetto, se ce ne sono.
   const categorie = Array.isArray(message.categories) ? message.categories : [];
@@ -655,15 +656,18 @@ export function renderReading(root, message, opzioni = {}) {
     root.append(el("div", "mail-cats", targhetteCategorie(categorie, opzioni.coloriCategorie)));
   }
 
+  // Il mittente arriva come «Nome <indirizzo>»: nome e indirizzo vanno nei loro
+  // posti, e ogni campo è testo del server — mai HTML.
+  const { nome, email } = nomeEmail(message.from);
   const sender = el("div", "mail-sender");
   sender.innerHTML = `
-    <span class="avatar" style="background:${message.avatarBg || "#5B6B7B"}">${message.initial || ""}</span>
+    <span class="avatar" style="background:${fugaHtml(message.avatarBg || "#5B6B7B")}">${fugaHtml(message.initial || "")}</span>
     <span>
-      <span class="sender-name">${message.from}</span>
-      <span class="sender-addr">&lt;${message.from.includes("@") ? message.from : message.from.toLowerCase().replace(/\s+/g, ".") + "@example.it"}&gt;</span>
-      <div class="sender-to">A: ${message.to || "'Mario Rossi'"}</div>
+      <span class="sender-name">${fugaHtml(nome)}</span>
+      <span class="sender-addr">${email ? `&lt;${fugaHtml(email)}&gt;` : ""}</span>
+      <div class="sender-to">A: ${fugaHtml(message.to || "'Mario Rossi'")}</div>
     </span>
-    <span class="mail-date">${message.date}</span>`;
+    <span class="mail-date">${fugaHtml(message.date)}</span>`;
   root.append(sender);
 
   // Barra informativa: compare solo se il messaggio ha uno stato da dichiarare
@@ -812,8 +816,8 @@ export function mostraAllegati(radice, allegati, onSalva) {
   for (const a of allegati) {
     const riga = el("div", "attach");
     riga.innerHTML = `<span class="attach-icon">📎</span>
-      <span class="attach-name">${a.name}</span>
-      <span class="attach-meta">${a.mime} · ${formatoDimensione(a.size)}</span>`;
+      <span class="attach-name">${fugaHtml(a.name)}</span>
+      <span class="attach-meta">${fugaHtml(a.mime)} · ${formatoDimensione(a.size)}</span>`;
     const bottone = el("button", "mail-btn", "Salva");
     bottone.type = "button";
     bottone.addEventListener("click", () => onSalva(a, bottone, riga));
