@@ -20,6 +20,7 @@ pub mod imap;
 pub mod mime;
 pub mod ops;
 pub mod protezione;
+pub mod push;
 pub mod regole;
 pub mod scadenza;
 pub mod sync;
