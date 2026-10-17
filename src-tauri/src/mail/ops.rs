@@ -444,6 +444,41 @@ pub async fn server_rinomina_cartella(
     Ok(completo)
 }
 
+/// Il nome completo di una cartella nuova. Dentro `genitore` si usa il separatore
+/// del server (`/` se non è noto). Al primo livello, se sul server tutte le
+/// cartelle oltre a INBOX stanno sotto `INBOX` + separatore (es. «INBOX.Drafts»,
+/// «INBOX.Sent»), la cartella va lì: fuori quel server la rifiuta. Con la sola
+/// INBOX non c'è nulla da cui dedurlo e la cartella resta in cima. Un nome che
+/// contiene già il separatore si usa com'è.
+pub fn nome_completo_nuova(
+    nome: &str,
+    genitore: Option<&str>,
+    delimitatore: Option<&str>,
+    esistenti: &[String],
+) -> String {
+    let nome = nome.trim();
+    let d = delimitatore.filter(|d| !d.is_empty());
+    if let Some(g) = genitore.map(str::trim).filter(|g| !g.is_empty()) {
+        return format!("{g}{}{nome}", d.unwrap_or("/"));
+    }
+    let Some(d) = d else {
+        return nome.to_string();
+    };
+    if nome.contains(d) {
+        return nome.to_string();
+    }
+    let prefisso = format!("INBOX{d}");
+    let sotto_inbox = |c: &String| {
+        c.len() > prefisso.len()
+            && c.get(..prefisso.len()).is_some_and(|p| p.eq_ignore_ascii_case(&prefisso))
+    };
+    let altre: Vec<&String> = esistenti.iter().filter(|c| !c.eq_ignore_ascii_case("INBOX")).collect();
+    if !altre.is_empty() && altre.iter().all(|c| sotto_inbox(c)) {
+        return format!("{prefisso}{nome}");
+    }
+    nome.to_string()
+}
+
 /// Il nome completo della cartella rinominata. Scrivendo solo il nome nuovo, la
 /// cartella resta sotto lo stesso genitore: con il separatore `.`,
 /// «INBOX.Progetti» → «Clienti» diventa «INBOX.Clienti». Sui server che tengono

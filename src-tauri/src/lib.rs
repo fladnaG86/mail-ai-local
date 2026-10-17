@@ -2008,9 +2008,10 @@ fn conversazioni_ignorate(account_id: Option<String>) -> Result<Vec<String>, Str
         .map_err(|e| e.to_string())
 }
 
-/// **Crea cartella**: `CREATE` sul server. Con un `genitore` il nome è composto
-/// `genitore/nome` (il separatore gerarchico può variare da server a server: se
-/// il server rifiuta, l'errore è leggibile e la cache non cambia). Blocco L:
+/// **Crea cartella**: `CREATE` sul server. Con un `genitore` la cartella nasce
+/// dentro di lui, col separatore del server; senza, al primo livello, che sui
+/// server «INBOX.» significa sotto INBOX (`ops::nome_completo_nuova`). Se il
+/// server rifiuta, l'errore è leggibile e la cache non cambia. Blocco L:
 /// `accountId` opzionale (assente → predefinito; inesistente → errore) e il
 /// registro è quello **di quell'account**.
 #[tauri::command]
@@ -2019,12 +2020,20 @@ async fn cartella_crea(
     genitore: Option<String>,
     account_id: Option<String>,
 ) -> Result<String, String> {
-    let nome = nome.trim();
-    let completo = match genitore.as_deref().map(str::trim).filter(|g| !g.is_empty()) {
-        Some(g) => format!("{g}/{nome}"),
-        None => nome.to_string(),
-    };
     let (account, sorgente) = sorgente_imap_per(account_id.as_deref())?;
+    let genitore = genitore.as_deref().map(str::trim).filter(|g| !g.is_empty());
+    let delimitatore = sorgente
+        .delimitatore(genitore.unwrap_or("INBOX"))
+        .await
+        .unwrap_or(None);
+    let esistenti: Vec<String> = apri_cache()?
+        .cartelle_registrate(&account.id)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|(n, _)| n)
+        .collect();
+    let completo =
+        mail::ops::nome_completo_nuova(&nome, genitore, delimitatore.as_deref(), &esistenti);
     mail::ops::server_crea_cartella(&sorgente, &completo).await?;
     let cache = apri_cache()?;
     cache

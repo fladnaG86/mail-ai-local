@@ -3412,11 +3412,15 @@ async function eseguiVoceCartella(voce, cartella) {
   const accountId = scelta.accountId || null;
   switch (voce.id) {
     case "nuova-cartella": {
-      const n = await chiediTesto("Nuova cartella", "Nome della nuova cartella:");
+      // Come in Outlook: su una cartella la nuova nasce dentro di lei, sull'account
+      // al primo livello (dove esattamente lo decide il kernel, dal server).
+      const genitore = cartella.kind === "group" ? null : nome;
+      const domanda = genitore ? `Nome della nuova cartella dentro «${genitore}»:` : "Nome della nuova cartella:";
+      const n = await chiediTesto("Nuova cartella", domanda);
       if (!n) return;
       const { errore, esito } = await azioneMailConEsito("cartella_crea", {
         nome: n,
-        genitore: cartella.kind === "group" ? null : null,
+        genitore,
         accountId,
       });
       if (errore) return stato(errore, true);
