@@ -1399,6 +1399,11 @@ html[data-tauri] .titlebar { padding-left: 78px; }
   border-radius: 6px; font: inherit; font-size: 12px; color: var(--text-primary); outline: none;
 }
 .rubrica-campo input:focus { border: 2px solid var(--campo-focus); }
+/* Blocco U: righe «etichetta · valore · ✕» per le email e i telefoni in più. */
+.rubrica-recapito { display: grid; grid-template-columns: 100px 1fr auto; gap: 6px; align-items: center; margin-bottom: 4px; }
+.rubrica-recapito input { width: 100%; box-sizing: border-box; }
+.rubrica-recapito-togli { border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; padding: 2px 6px; }
+.rubrica-link { border: 0; background: transparent; color: var(--accent); cursor: pointer; padding: 2px 0; font-size: 11px; }
 .rubrica-modulo-azioni { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
 .rubrica-nota {
   flex: 0 0 auto; padding: 6px 14px 10px; font-size: 12px;

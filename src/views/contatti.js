@@ -385,11 +385,40 @@ export function collegaCampoDestinatario(input, opzioni = {}) {
 const CAMPI_MODULO = [
   { nome: "nome", etichetta: "Nome" },
   { nome: "cognome", etichetta: "Cognome" },
-  { nome: "email", etichetta: "Indirizzo" },
+  { nome: "email", etichetta: "Email" },
   { nome: "telefono", etichetta: "Telefono" },
   { nome: "azienda", etichetta: "Azienda" },
+  { nome: "ruolo", etichetta: "Ruolo" },
+  { nome: "indirizzo", etichetta: "Indirizzo postale" },
   { nome: "note", etichetta: "Note" },
 ];
+
+/** Blocco U: le liste di recapiti «in più» della scheda (email e telefoni). */
+const LISTE_RECAPITI = [
+  { nome: "emailAltre", etichetta: "Altre email", aggiungi: "＋ Aggiungi email" },
+  { nome: "telefoni", etichetta: "Altri telefoni", aggiungi: "＋ Aggiungi telefono" },
+];
+
+/** Etichette proposte per un recapito (si può scrivere anche altro). */
+const ETICHETTE_RECAPITO = ["lavoro", "casa", "cellulare", "fax", "altro"];
+
+function rigaRecapito(r = {}) {
+  return `<div class="rubrica-recapito">
+      <input type="text" data-recapito="etichetta" list="rubrica-etichette" placeholder="etichetta" value="${fuga(r.etichetta || "")}" autocomplete="off" spellcheck="false" aria-label="Etichetta" />
+      <input type="text" data-recapito="valore" value="${fuga(r.valore || "")}" autocomplete="off" spellcheck="false" aria-label="Valore" />
+      <button type="button" class="rubrica-recapito-togli" data-togli title="Togli">✕</button>
+    </div>`;
+}
+
+/** I recapiti di una lista del modulo, senza le righe lasciate vuote. */
+function leggiRecapiti(contenitore) {
+  return [...contenitore.querySelectorAll(".rubrica-recapito")]
+    .map((riga) => ({
+      etichetta: riga.querySelector("[data-recapito=etichetta]").value.trim(),
+      valore: riga.querySelector("[data-recapito=valore]").value.trim(),
+    }))
+    .filter((r) => r.valore);
+}
 
 function riga(contatto, formato) {
   const nome = nomeVisualizzato(contatto, formato) || "(senza nome)";
@@ -408,9 +437,18 @@ function modulo(contatto) {
     return `<label class="rubrica-campo"><span>${f.etichetta}</span>
       <input type="text" data-campo="${f.nome}" value="${valore}" autocomplete="off" spellcheck="false" /></label>`;
   }).join("");
+  const liste = LISTE_RECAPITI.map((l) => {
+    const voci = Array.isArray(c[l.nome]) ? c[l.nome] : [];
+    return `<div class="rubrica-campo"><span>${l.etichetta}</span>
+      <div data-lista="${l.nome}">${voci.map(rigaRecapito).join("")}</div>
+      <button type="button" class="rubrica-link" data-aggiungi="${l.nome}">${l.aggiungi}</button></div>`;
+  }).join("");
+  const etichette = ETICHETTE_RECAPITO.map((e) => `<option value="${e}"></option>`).join("");
   return `<div class="rubrica-modulo">
       <div class="rubrica-modulo-titolo">${contatto && contatto.id ? "Modifica contatto" : "Nuovo contatto"}</div>
       ${campi}
+      ${liste}
+      <datalist id="rubrica-etichette">${etichette}</datalist>
       <div class="rubrica-modulo-azioni">
         <button type="button" class="rubrica-btn" data-form="annulla">Annulla</button>
         <button type="button" class="rubrica-btn rubrica-btn--ok" data-form="salva">Salva</button>
@@ -547,10 +585,28 @@ export function apriRubrica(opzioni = {}) {
       schedaEl.innerHTML = "";
       contattoInModulo = null;
     });
+    // Righe dei recapiti: «＋» ne aggiunge una vuota, «✕» la toglie.
+    schedaEl.addEventListener("click", (e) => {
+      const aggiungi = e.target.closest("[data-aggiungi]");
+      if (aggiungi) {
+        const lista = schedaEl.querySelector(`[data-lista="${aggiungi.dataset.aggiungi}"]`);
+        lista.insertAdjacentHTML("beforeend", rigaRecapito());
+        lista.lastElementChild.querySelector("[data-recapito=valore]").focus();
+        return;
+      }
+      const togli = e.target.closest("[data-togli]");
+      if (togli) togli.closest(".rubrica-recapito").remove();
+    });
     schedaEl.querySelector('[data-form="salva"]').addEventListener("click", async () => {
-      const nuovo = { id: contatto && contatto.id ? contatto.id : null };
+      // Si parte dal contatto com'era: i campi che il modulo non mostra
+      // (es. l'origine) viaggiano intatti, e il kernel — che in modifica
+      // riscrive tutto — non li cancella.
+      const nuovo = Object.assign({}, contatto || {}, { id: contatto && contatto.id ? contatto.id : null });
       schedaEl.querySelectorAll("[data-campo]").forEach((i) => {
         nuovo[i.dataset.campo] = i.value;
+      });
+      schedaEl.querySelectorAll("[data-lista]").forEach((l) => {
+        nuovo[l.dataset.lista] = leggiRecapiti(l);
       });
       if (!String(nuovo.email || "").trim()) {
         nota("L'indirizzo è obbligatorio: senza indirizzo il contatto non si può salvare.", true);
