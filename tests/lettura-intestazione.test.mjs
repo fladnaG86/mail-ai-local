@@ -27,9 +27,9 @@ function leggi(messaggio) {
 }
 
 test("il mittente si divide in nome e indirizzo", () => {
-  const root = leggi({ from: "Maurizio Lant <maurizio.la@gmail.com>", subject: "Ciao" });
-  assert.equal(root.querySelector(".sender-name").textContent, "Maurizio Lant");
-  assert.equal(root.querySelector(".sender-addr").textContent, "<maurizio.la@gmail.com>");
+  const root = leggi({ from: "Mario Rossi <mario.rossi@esempiohost.it>", subject: "Ciao" });
+  assert.equal(root.querySelector(".sender-name").textContent, "Mario Rossi");
+  assert.equal(root.querySelector(".sender-addr").textContent, "<mario.rossi@esempiohost.it>");
 });
 
 test("un mittente col solo indirizzo lo mostra come nome, senza indirizzo inventato", () => {
