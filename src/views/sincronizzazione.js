@@ -14,12 +14,13 @@
  * esegue un «Invia e ricevi» ogni N minuti; **Sincronizza all'avvio** lancia la
  * sincronizzazione all'apertura **solo se la casella è spuntata** (spenta di
  * default: senza di essa l'app non tocca la rete al lancio). Allinea anche
- * `ultimaSyncMs`, così il timer non risincronizza subito dopo. **Non** è offerta
- * la sincronizzazione in push (IMAP IDLE / Exchange): non è implementata, quindi
- * non la si finge.
+ * `ultimaSyncMs`, così il timer non risincronizza subito dopo. Blocco W: la
+ * **posta in push** (IMAP IDLE sulla Posta in arrivo) si accende qui (`syncPush`),
+ * con lo stato di ogni casella; Exchange resta fuori portata.
  */
 
 import { apriOverlayPannello, fuga } from "./blocco-i2.js";
+import { testoStatoPush } from "./push.js";
 
 /** Preset dell'intervallo di sincronizzazione automatica (minuti). */
 export const PRESET_INTERVALLO = [
@@ -80,6 +81,7 @@ export function apriPannelloSincronizzazione(opzioni = {}) {
   const prefs = opzioni.preferenze || {};
   const intervallo = normIntervalloMinuti(prefs.syncIntervalloMinuti);
   const avvio = !!prefs.syncAllAvvio;
+  const push = !!prefs.syncPush;
 
   const p = apriOverlayPannello(
     "Impostazioni di sincronizzazione",
@@ -95,7 +97,11 @@ export function apriPannelloSincronizzazione(opzioni = {}) {
      </div>
      <label class="ai-check"><input type="checkbox" id="s-avvio"${avvio ? " checked" : ""}> Sincronizza all'avvio dell'app</label>
      <p class="im-nota">Il timer agisce <b>mentre l'app è aperta</b>: alla riapertura la sincronizzazione riparte. Non è un servizio in background.</p>
-     <p class="im-nota">La sincronizzazione <b>in push</b> (IMAP IDLE / Exchange) non è disponibile: non è implementata, quindi non è offerta.</p>
+     <div class="settings-sec">Posta in push</div>
+     <div class="settings-hr"></div>
+     <label class="ai-check"><input type="checkbox" id="s-push"${push ? " checked" : ""}> Ricevi i messaggi appena arrivano (push)</label>
+     <p class="im-nota">Con il push l'app tiene aperta, <b>dall'avvio</b>, una connessione IMAP IDLE con la Posta in arrivo di ogni casella: il server avvisa e la casella si sincronizza subito. Le altre cartelle seguono l'intervallo. Exchange non è supportato.</p>
+     <ul class="im-nota" id="s-push-stato" aria-live="polite"></ul>
      <div class="ai-avvia-riga">
        <button type="button" class="ai-btn2" id="s-ora">Sincronizza ora</button>
      </div>`,
@@ -104,10 +110,23 @@ export function apriPannelloSincronizzazione(opzioni = {}) {
   const q = (id) => p.overlay.querySelector(`#${id}`);
   const getTema = typeof opzioni.getTema === "function" ? opzioni.getTema : () => "system";
 
+  // Blocco W3: lo stato del push di ogni casella, aggiornabile dal vivo.
+  const aggiornaStatiPush = (stati) => {
+    const el = q("s-push-stato");
+    const elenco = Array.isArray(stati) ? stati : [];
+    el.innerHTML = elenco
+      .map((s) => `<li>${fuga(s.account)}: ${fuga(testoStatoPush(s))}</li>`)
+      .join("");
+    el.hidden = !elenco.length;
+  };
+  aggiornaStatiPush(opzioni.statiPush);
+  p.overlay.aggiornaStatiPush = aggiornaStatiPush;
+
   const salva = async () => {
     const nuove = Object.assign({}, opzioni.preferenze, {
       syncIntervalloMinuti: normIntervalloMinuti(q("s-intervallo").value),
       syncAllAvvio: q("s-avvio").checked,
+      syncPush: q("s-push").checked,
     });
     if (typeof opzioni.onApplica === "function") opzioni.onApplica(nuove);
     if (typeof opzioni.onSalva !== "function") {
@@ -119,11 +138,21 @@ export function apriPannelloSincronizzazione(opzioni = {}) {
       p.nota(esito || "Salvato.");
     } catch (e) {
       p.nota(`Non salvato: ${e && e.message ? e.message : e}`, true);
+      return;
+    }
+    // Il kernel legge la preferenza appena salvata e avvia o ferma i canali.
+    if (typeof opzioni.onPush === "function") {
+      try {
+        aggiornaStatiPush(await opzioni.onPush());
+      } catch (e) {
+        p.nota(`Push non aggiornato: ${e && e.message ? e.message : e}`, true);
+      }
     }
   };
 
   q("s-intervallo").addEventListener("change", salva);
   q("s-avvio").addEventListener("change", salva);
+  q("s-push").addEventListener("change", salva);
   const prova = q("s-ora");
   if (prova) {
     prova.addEventListener("click", async () => {

@@ -54,6 +54,7 @@ import {
 import { creaAggiornaDock } from "./views/dock.js";
 import { analizzaMailto, EVENTO_APERTURE } from "./views/apertura-esterna.js";
 import { apriFinestraFile } from "./views/apertura-file.js";
+import { creaRaggruppatore, EVENTO_POSTA_PUSH, EVENTO_STATO_PUSH } from "./views/push.js";
 import { apriPannelloNotifiche } from "./views/notifiche.js";
 import {
   apriAssistenteIA,
@@ -1362,7 +1363,13 @@ async function apriPannelloMailUI(chiave) {
     return apriPannelloCerca(comuni);
   }
   if (chiave === "sincronizzazione") {
-    return apriPannelloSincronizzazione(Object.assign({ onSincronizzaOra: inviaERicevi }, comuni));
+    pannelloSyncEl = apriPannelloSincronizzazione(
+      Object.assign(
+        { onSincronizzaOra: inviaERicevi, statiPush: [...statiPush.values()], onPush: () => riconciliaPush() },
+        comuni,
+      ),
+    );
+    return pannelloSyncEl;
   }
   if (chiave === "archiviazione") {
     const stato = await caricaStatoArchiviazione();
@@ -1494,6 +1501,8 @@ async function apriAccountUI(opzioni = {}) {
     onMostraTutte: apriImpostazioniUI,
     onSalva: async ({ account, password }) => {
       await window.__TAURI__.core.invoke("account_save", { account, password });
+      // Server o credenziali possono essere cambiati: il canale push riparte.
+      riconciliaPush(true);
     },
     onElimina: eliminaAccountKernel,
     onPredefinito: impostaPredefinitoKernel,
@@ -1513,6 +1522,8 @@ async function apriAccountUI(opzioni = {}) {
 /** Elimina un account (comando `account_elimina`): configurazione, Keychain e cache. */
 async function eliminaAccountKernel(id) {
   const esito = await window.__TAURI__.core.invoke("account_elimina", { id });
+  // Il canale push della casella eliminata si ferma.
+  riconciliaPush();
   // La selezione attiva non può puntare a una casella che non c'è più.
   if (accountAttivo === id) {
     accountAttivo = "";
@@ -3680,6 +3691,65 @@ function collegaApertureEsterne() {
   ritiraAperture();
 }
 
+// ---------------------------------------------------------------------------
+// Blocco W3: posta in push. Il kernel tiene un IDLE sulla Posta in arrivo di
+// ogni casella (se `syncPush` è acceso) e avvisa con `posta-push`; qui si
+// sincronizza quella sola cartella, una volta per raffica di avvisi.
+// ---------------------------------------------------------------------------
+
+/** Ultimo stato del push per casella (id account → stato del kernel). */
+const statiPush = new Map();
+/** Il pannello Sincronizzazione aperto, per aggiornarne gli stati dal vivo. */
+let pannelloSyncEl = null;
+
+/** Allinea i canali push del kernel alle preferenze; restituisce gli stati. */
+async function riconciliaPush(riavvia = false) {
+  if (!dentroTauri()) return [];
+  try {
+    const stati = await window.__TAURI__.core.invoke("push_riconcilia", { riavvia });
+    statiPush.clear();
+    for (const s of Array.isArray(stati) ? stati : []) statiPush.set(s.account, s);
+  } catch {
+    // Push non disponibile: resta la sincronizzazione a intervalli.
+  }
+  return [...statiPush.values()];
+}
+
+/** All'avviso: sincronizza la sola Posta in arrivo della casella e ridisegna. */
+async function sincronizzaDaPush(accountId) {
+  try {
+    await window.__TAURI__.core.invoke("mail_sync", { accountId, soloCartella: CARTELLA_POSTA_IN_ARRIVO });
+  } catch (err) {
+    stato(`Posta in push: sincronizzazione non riuscita: ${(err && err.message) || err}`, true);
+    return;
+  }
+  await caricaCartelle();
+  if (cartellaAttiva === CARTELLA_POSTA_IN_ARRIVO && (!accountAttivo || accountAttivo === accountId)) {
+    await apriCartellaSelezionata();
+  }
+}
+
+const avvisoPush = creaRaggruppatore(sincronizzaDaPush);
+
+/** Ascolta avvisi e stati del push e allinea i canali all'avvio. */
+function collegaPush() {
+  if (!dentroTauri()) return;
+  const eventi = window.__TAURI__.event;
+  if (eventi && typeof eventi.listen === "function") {
+    eventi.listen(EVENTO_POSTA_PUSH, (e) => {
+      if (e && e.payload) avvisoPush(String(e.payload));
+    });
+    eventi.listen(EVENTO_STATO_PUSH, (e) => {
+      if (!e || !e.payload || !e.payload.account) return;
+      statiPush.set(e.payload.account, e.payload);
+      if (pannelloSyncEl && pannelloSyncEl.isConnected && pannelloSyncEl.aggiornaStatiPush) {
+        pannelloSyncEl.aggiornaStatiPush([...statiPush.values()]);
+      }
+    });
+  }
+  riconciliaPush();
+}
+
 /** Nel browser non c'è kernel: la barra scorre su cartelle d'esempio, per la prova visiva. */
 async function avanzamentoDiProva() {
   const cartelle = ["INBOX", "Posta inviata", "Bozze", "Archivio"];
@@ -3906,6 +3976,8 @@ export async function boot() {
   // Blocco V2: link `mailto:` da altre app (anche quello che ha lanciato l'app).
   // Dopo le preferenze, così la composizione nasce con firma e carattere giusti.
   collegaApertureEsterne();
+  // Blocco W3: posta in push (non fa nulla se `syncPush` è spento).
+  collegaPush();
 
   // Aggancio per le prove visive: ?view=account apre la finestra Account con
   // due caselle di esempio (blocco J), per confrontarla col mockup misurato

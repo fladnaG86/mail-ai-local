@@ -250,8 +250,10 @@ Su `11434` c'è anche Ollama, se preferisci un modello più piccolo: l'endpoint 
     - **Impostazioni di sincronizzazione** (riquadro **Sincronizzazione**): un
       **intervallo** (Mai / 5–120 minuti) che avvia un timer di «Invia e ricevi»
       **mentre l'app è aperta** (non è un servizio in background) e «Sincronizza
-      all'avvio». **Dichiarato**: la sincronizzazione **in push** (IMAP IDLE /
-      Exchange) non è disponibile e non è offerta.
+      all'avvio». Blocco W: **Ricevi i messaggi appena arrivano (push)**, spento
+      di default, tiene un IMAP IDLE sulla Posta in arrivo di ogni casella e ne
+      mostra lo stato (attivo, riconnessione, server senza IDLE, fermo).
+      **Dichiarato**: Exchange non è supportato.
     - **Archiviazione** (scheda *Altro*): mostra la **dimensione vera** della
       cache locale e il numero di messaggi (comando `archiviazione_stato`), una
       soglia di avviso in MB e **Svuota la cache locale** (comando `svuota_cache`).

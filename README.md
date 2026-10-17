@@ -39,7 +39,6 @@ Dichiarato, non nascosto — le voci non disponibili sono indicate nel pannello 
 - Exchange, cartelle delegate, Teams, Copilot
 - Calendario a griglia con ricorrenze (c'è un'agenda a **elenco**)
 - Risposte automatiche lato server, S/MIME
-- Sincronizzazione push (IMAP IDLE): la sincronizzazione è a intervallo
 
 ## Requisiti
 
