@@ -2602,8 +2602,21 @@ pub fn contatti_importa_vcard_in(
     path_db: &Path,
     testo: &str,
 ) -> Result<contatti::EsitoImport, String> {
+    contatti_importa_testo_in(path_db, testo, "")
+}
+
+/// Importa un testo vCard segnando i contatti nuovi con `origine` (blocco U6:
+/// «macos» per quelli presi dai Contatti di macOS; "" per un file scelto).
+pub fn contatti_importa_testo_in(
+    path_db: &Path,
+    testo: &str,
+    origine: &str,
+) -> Result<contatti::EsitoImport, String> {
     let cache = store::Store::open(path_db).map_err(|e| e.to_string())?;
-    let parse = contatti::importa_vcard(testo);
+    let mut parse = contatti::importa_vcard(testo);
+    for scheda in &mut parse.schede {
+        scheda.contatto.origine = origine.to_string();
+    }
     let mut importati = 0usize;
     let mut aggiornati = 0usize;
     let mut conflitti: Vec<String> = Vec::new();
@@ -2639,6 +2652,30 @@ pub fn contatti_importa_vcard_in(
 #[tauri::command]
 fn contatti_importa_vcard(testo: String) -> Result<contatti::EsitoImport, String> {
     contatti_importa_vcard_in(&cache_path(), &testo)
+}
+
+/// Blocco U6: importa nella rubrica tutte le schede dei Contatti di macOS. Si
+/// chiede a Contatti la loro vCard con `osascript` (la prima volta macOS chiede
+/// il permesso di automazione) e la si passa all'importatore vCard.
+#[tauri::command]
+async fn contatti_importa_macos() -> Result<contatti::EsitoImport, String> {
+    // `osascript` può aspettare a lungo (la richiesta di permesso): fuori dal
+    // thread asincrono.
+    let uscita = tokio::task::spawn_blocking(|| {
+        let mut comando = std::process::Command::new("osascript");
+        for riga in contatti::SCRIPT_CONTATTI_MACOS {
+            comando.arg("-e").arg(riga);
+        }
+        comando.output()
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| format!("non riesco ad avviare osascript: {e}"))?;
+    if !uscita.status.success() {
+        return Err(contatti::errore_contatti_macos(&String::from_utf8_lossy(&uscita.stderr)));
+    }
+    let testo = String::from_utf8_lossy(&uscita.stdout);
+    contatti_importa_testo_in(&cache_path(), &testo, "macos")
 }
 
 /// Esporta tutta la rubrica in un file vCard. Restituisce quanti contatti ha
@@ -3669,6 +3706,7 @@ pub fn run() {
             contatti_esporta_vcard,
             contatti_suggerisci,
             gruppi_elenco,
+            contatti_importa_macos,
             gruppo_salva,
             gruppo_elimina,
             regole_elenco,

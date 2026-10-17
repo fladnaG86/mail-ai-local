@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Blocco U6: testo della richiesta di macOS quando la rubrica importa dai Contatti. -->
+  <key>NSAppleEventsUsageDescription</key>
+  <string>Outlook AI legge le schede dell'app Contatti solo quando scegli «Importa da Contatti di macOS» nella rubrica.</string>
+</dict>
+</plist>

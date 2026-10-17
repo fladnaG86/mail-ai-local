@@ -482,6 +482,7 @@ function markup() {
       <button type="button" class="rubrica-btn" data-az="elimina">Elimina</button>
       <button type="button" class="rubrica-btn" data-az="importa">Importa vCard…</button>
       <button type="button" class="rubrica-btn" data-az="esporta">Esporta in vCard</button>
+      <button type="button" class="rubrica-btn" data-az="importa-macos">Importa da Contatti di macOS</button>
       <button type="button" class="rubrica-btn" data-az="gruppi">Gruppi…</button>
       <label class="rubrica-filtro"><input type="checkbox" id="rubrica-solo-auto" /> Solo aggiunti automaticamente</label>
     </div>
@@ -504,7 +505,8 @@ function markup() {
  * - `onApriComposizione(email)` → apre una nuova composizione (doppio clic);
  * - `focusRicerca` vero → il fuoco va nel campo di ricerca (voce "Trova contatto");
  * - `ricercaIniziale` → testo già scritto nel campo di ricerca (prove visive);
- * - `gruppi` → opzioni della finestra «Gruppi» (`onElenco`, `onSalva`, `onElimina`).
+ * - `gruppi` → opzioni della finestra «Gruppi» (`onElenco`, `onSalva`, `onElimina`);
+ * - `onImportaMacos()` → esito dell'importazione dai Contatti di macOS.
  */
 export function apriRubrica(opzioni = {}) {
   document.querySelectorAll(".rubrica-overlay").forEach((el) => el.remove());
@@ -744,6 +746,20 @@ export function apriRubrica(opzioni = {}) {
           nota(percorso ? `Rubrica esportata in: ${percorso}` : "Esportazione non riuscita (vedi console).");
         } catch (e) {
           nota(`Esportazione non riuscita: ${e && e.message ? e.message : e}`, true);
+        }
+      } else if (az === "importa-macos") {
+        // Blocco U6: le schede dell'app Contatti, via kernel (osascript → vCard).
+        if (typeof opzioni.onImportaMacos !== "function") {
+          nota("L'importazione dai Contatti di macOS funziona solo dentro l'app.", true);
+          return;
+        }
+        nota("Lettura dei Contatti di macOS…");
+        try {
+          const esito = await opzioni.onImportaMacos();
+          await ricarica();
+          nota(testoImportazione(esito));
+        } catch (e) {
+          nota(String(e && e.message ? e.message : e), true);
         }
       } else if (az === "gruppi") {
         // Blocco U4: la finestra dei gruppi (col kernel se il chiamante lo collega).

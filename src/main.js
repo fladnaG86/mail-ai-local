@@ -1119,6 +1119,8 @@ function apriRubricaUI(opzioni = {}) {
     onElimina: dentro ? eliminaContattoKernel : undefined,
     onImporta: dentro ? importaVCardKernel : undefined,
     onEsporta: dentro ? esportaVCardKernel : undefined,
+    // Blocco U6: importazione dai Contatti di macOS (permesso di automazione).
+    onImportaMacos: dentro ? () => window.__TAURI__.core.invoke("contatti_importa_macos") : undefined,
     // Blocco U4: la finestra «Gruppi» lavora sul kernel.
     gruppi: dentro
       ? {

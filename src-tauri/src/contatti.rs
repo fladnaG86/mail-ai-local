@@ -575,6 +575,28 @@ fn scheda_da(prop: &[(String, String, String)]) -> SchedaVcard {
 
 /// Il nome visualizzato dentro un indirizzo "Nome <utente@host>" (vuoto se non
 /// c'è un nome).
+/// Blocco U6: lo script AppleScript (una riga per `osascript -e`) che chiede a
+/// Contatti di macOS la vCard di tutte le schede, unite da un a capo: la lista
+/// convertita in testo con i delimitatori predefiniti avrebbe «, » fra una
+/// scheda e l'altra, e le vCard si romperebbero.
+pub const SCRIPT_CONTATTI_MACOS: &[&str] = &[
+    "tell application \"Contacts\" to set schede to vcard of every person",
+    "set AppleScript's text item delimiters to linefeed",
+    "return schede as text",
+];
+
+/// Il messaggio per l'utente quando `osascript` non riesce a leggere Contatti.
+/// Il caso tipico (-1743) è il permesso di automazione negato.
+pub fn errore_contatti_macos(stderr: &str) -> String {
+    let s = stderr.trim();
+    if s.contains("-1743") || s.to_lowercase().contains("not authorized") {
+        return "macOS non permette a Outlook AI di leggere Contatti: concedilo in Impostazioni di \
+                Sistema → Privacy e sicurezza → Automazione → Outlook AI → Contatti, poi riprova."
+            .to_string();
+    }
+    format!("non riesco a leggere i Contatti di macOS: {s}")
+}
+
 /// Blocco U5: i contatti da aggiungere alla rubrica dopo un invio, dai campi
 /// A/Cc/Ccn («Nome <indirizzo>» o solo l'indirizzo). Indirizzi in minuscolo,
 /// senza doppioni, senza `escludi` (il proprio indirizzo) e senza ciò che non
