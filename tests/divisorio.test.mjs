@@ -72,13 +72,14 @@ async function avvia(preferenze = {}) {
   // jsdom non fa layout: altezza di `.main` fissa, quella della lista è quella impostata.
   const mainEl = doc.querySelector(".main");
   const lista = doc.querySelector("#message-list");
-  Object.defineProperty(mainEl, "offsetHeight", { get: () => ALTEZZA_MAIN });
-  mainEl.getBoundingClientRect = () => ({ top: 0, height: ALTEZZA_MAIN });
+  const misure = { main: ALTEZZA_MAIN };
+  Object.defineProperty(mainEl, "offsetHeight", { get: () => misure.main });
+  mainEl.getBoundingClientRect = () => ({ top: 0, height: misure.main });
   Object.defineProperty(lista, "offsetHeight", { get: () => parseFloat(lista.style.height) || 0 });
 
   impostaGlobali(window_);
   await main.boot();
-  return { window_, doc, mainEl, lista, salvate, letture, divisorio: doc.querySelector("#list-splitter") };
+  return { window_, doc, mainEl, lista, misure, salvate, letture, divisorio: doc.querySelector("#list-splitter") };
 }
 
 function mouse(w, tipo, y) {
@@ -170,4 +171,31 @@ test("passando da sotto a destra gli stili messi dal divisorio spariscono", asyn
   await main.boot();
   assert.equal(w.lista.style.height, "");
   assert.equal(w.lista.style.flex, "");
+});
+
+/** Simula il ridimensionamento della finestra: `.main` cambia altezza. */
+function ridimensiona(w, altezza) {
+  w.misure.main = altezza;
+  w.window_.dispatchEvent(new w.window_.Event("resize"));
+}
+
+test("ridimensionando la finestra la lista mantiene il rapporto salvato", async () => {
+  const w = await avvia({ splitRapporto: 0.25 });
+  ridimensiona(w, 1004); // corsa 680
+  assert.equal(w.lista.style.height, `${120 + 0.25 * 680}px`);
+});
+
+test("rimpicciolendo la finestra la lettura non scende sotto il suo minimo", async () => {
+  const w = await avvia({ splitRapporto: 1 });
+  ridimensiona(w, 404); // corsa 80
+  assert.equal(w.lista.style.height, `${120 + 80}px`);
+});
+
+test("dopo un trascinamento il ridimensionamento usa il rapporto trascinato", async () => {
+  const w = await avvia({});
+  trascina(w, 300, 328); // 0.5 → 0.6
+  // Il rapporto entra nelle preferenze quando il kernel ha risposto al salvataggio.
+  await new Promise((r) => setImmediate(r));
+  ridimensiona(w, 1004);
+  assert.equal(w.lista.style.height, `${120 + 0.6 * 680}px`);
 });

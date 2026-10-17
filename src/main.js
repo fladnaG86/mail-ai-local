@@ -561,6 +561,9 @@ function collegaSplitter() {
     resettaSplit();
   });
   splitterEl.title = "Trascina per ridistribuire · doppio clic: metà";
+  // L'altezza della lista è in pixel: a finestra ridimensionata va ricalcolata
+  // dal rapporto, o la lettura scenderebbe sotto il suo minimo.
+  window.addEventListener("resize", () => applicaSplit());
 }
 
 /**
