@@ -1109,6 +1109,8 @@ function apriRubricaUI(opzioni = {}) {
   // Blocco Q: l'ordine e il formato del nome della rubrica sono preferenze
   // (pannello «Contatti»), normalizzate qui come nel kernel.
   const prefs = preferenzeCorrenti || {};
+  // Dentro l'app la rubrica lavora sul kernel; nel browser sui dati d'esempio.
+  const dentro = dentroTauri();
   return apriRubrica({
     focusRicerca: !!opzioni.focusRicerca,
     ricercaIniziale: opzioni.ricercaIniziale || "",
@@ -3360,7 +3362,7 @@ function eseguiVoceMenu(voce, m, conversazione, ancora) {
       return apriRisposta(m, true);
     case "inoltra":
       messaggioCorrente = m;
-      return apriInoltra(m);
+      return apriInoltro(m);
     case "rinvia":
       return rinviaMessaggio(m);
     case "inoltra-allegato":
@@ -3711,7 +3713,7 @@ function ribbonAzione(azione, gruppo) {
     case "reply-all":
       return apriRisposta(messaggioCorrente, true);
     case "forward":
-      return apriInoltra(messaggioCorrente);
+      return apriInoltro(messaggioCorrente);
     case "delete":
       return eliminaSelezionato();
     case "archive":
