@@ -1119,6 +1119,14 @@ function apriRubricaUI(opzioni = {}) {
     onElimina: dentro ? eliminaContattoKernel : undefined,
     onImporta: dentro ? importaVCardKernel : undefined,
     onEsporta: dentro ? esportaVCardKernel : undefined,
+    // Blocco U4: la finestra «Gruppi» lavora sul kernel.
+    gruppi: dentro
+      ? {
+          onElenco: () => window.__TAURI__.core.invoke("gruppi_elenco"),
+          onSalva: (gruppo) => window.__TAURI__.core.invoke("gruppo_salva", { gruppo }),
+          onElimina: (id) => window.__TAURI__.core.invoke("gruppo_elimina", { id }),
+        }
+      : {},
     onApriComposizione: async (email) => {
       apriComposizione({
         a: email || "",

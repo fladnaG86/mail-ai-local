@@ -161,8 +161,40 @@ pub struct EsitoImport {
 pub struct Suggerimento {
     pub nome: String,
     pub email: String,
-    /// Provenienza: "rubrica" oppure "messaggi".
+    /// Provenienza: "rubrica", "messaggi" oppure "gruppo" (blocco U).
     pub origine: String,
+    /// Blocco U: gli indirizzi dei membri, se il suggerimento è un gruppo.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub membri: Vec<String>,
+}
+
+/// Un gruppo di contatti (lista di distribuzione, blocco U). I membri sono
+/// indirizzi, non contatti: un membro può non essere in rubrica.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Gruppo {
+    #[serde(default)]
+    pub id: Option<i64>,
+    #[serde(default)]
+    pub nome: String,
+    #[serde(default)]
+    pub membri: Vec<String>,
+}
+
+/// I gruppi da proporre per `testo`: nome che lo contiene (senza distinzione
+/// fra maiuscole e minuscole), almeno un membro. Il nome mostra quanti sono.
+pub fn suggerimenti_gruppi(gruppi: &[Gruppo], testo: &str) -> Vec<Suggerimento> {
+    let q = testo.trim().to_lowercase();
+    gruppi
+        .iter()
+        .filter(|g| !g.membri.is_empty() && (q.is_empty() || g.nome.to_lowercase().contains(&q)))
+        .map(|g| Suggerimento {
+            nome: format!("{} ({})", g.nome.trim(), g.membri.len()),
+            email: String::new(),
+            origine: "gruppo".to_string(),
+            membri: g.membri.clone(),
+        })
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -581,6 +613,7 @@ pub fn suggerisci_da(
                 nome: c.nome_visualizzato(),
                 email: c.email.trim().to_string(),
                 origine: "rubrica".to_string(),
+                membri: Vec::new(),
             },
         ));
         // Blocco U: anche le email «altre», col nome del contatto.
@@ -595,6 +628,7 @@ pub fn suggerisci_da(
                     nome: c.nome_visualizzato(),
                     email: altra,
                     origine: "rubrica".to_string(),
+                    membri: Vec::new(),
                 },
             ));
         }
@@ -619,6 +653,7 @@ pub fn suggerisci_da(
                 nome,
                 email: indirizzo,
                 origine: "messaggi".to_string(),
+                membri: Vec::new(),
             },
         ));
     }

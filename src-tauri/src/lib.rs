@@ -2650,7 +2650,30 @@ pub fn contatti_suggerisci_da(
         .map(Into::into)
         .collect();
     let indirizzi = cache.indirizzi_messaggi().map_err(|e| e.to_string())?;
-    Ok(contatti::suggerisci_da(&rubrica, &indirizzi, testo, limite))
+    // Blocco U: i gruppi che corrispondono vengono per primi.
+    let gruppi = cache.gruppi().map_err(|e| e.to_string())?;
+    let mut tutti = contatti::suggerimenti_gruppi(&gruppi, testo);
+    tutti.extend(contatti::suggerisci_da(&rubrica, &indirizzi, testo, limite));
+    tutti.truncate(limite.max(1));
+    Ok(tutti)
+}
+
+/// I gruppi di contatti della rubrica (blocco U).
+#[tauri::command]
+fn gruppi_elenco() -> Result<Vec<contatti::Gruppo>, String> {
+    apri_cache()?.gruppi().map_err(|e| e.to_string())
+}
+
+/// Salva un gruppo (nuovo o esistente); restituisce l'id.
+#[tauri::command]
+fn gruppo_salva(gruppo: contatti::Gruppo) -> Result<i64, String> {
+    apri_cache()?.gruppo_salva(&gruppo).map_err(|e| e.to_string())
+}
+
+/// Elimina un gruppo (i contatti dei membri restano in rubrica).
+#[tauri::command]
+fn gruppo_elimina(id: i64) -> Result<usize, String> {
+    apri_cache()?.gruppo_elimina(id).map_err(|e| e.to_string())
 }
 
 /// Suggerimenti di destinatari per i campi A/Cc/Ccn della composizione.
@@ -3617,6 +3640,9 @@ pub fn run() {
             contatti_importa_vcard,
             contatti_esporta_vcard,
             contatti_suggerisci,
+            gruppi_elenco,
+            gruppo_salva,
+            gruppo_elimina,
             regole_elenco,
             regola_salva,
             regola_elimina,

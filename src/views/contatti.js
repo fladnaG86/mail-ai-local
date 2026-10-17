@@ -16,6 +16,7 @@
 import { rendiSpostabile } from "./finestre.js";
 import { fugaHtml as fuga } from "./mail-actions.js";
 import { PULSANTE_CHIUDI } from "./blocco-i2.js";
+import { apriGruppi } from "./gruppi.js";
 
 /** Numero di suggerimenti mostrati sotto un campo dei destinatari. */
 export const LIMITE_SUGGERIMENTI = 8;
@@ -282,7 +283,12 @@ export function collegaCampoDestinatario(input, opzioni = {}) {
     const v = input.value;
     const taglio = Math.max(v.lastIndexOf(","), v.lastIndexOf(";"));
     const prima = taglio >= 0 ? v.slice(0, taglio + 1) + " " : "";
-    input.value = `${prima}${formattaSuggerimento(s)}; `;
+    // Blocco U: un gruppo si espande negli indirizzi dei suoi membri.
+    const scelta =
+      s.origine === "gruppo" && Array.isArray(s.membri) && s.membri.length
+        ? s.membri.join("; ")
+        : formattaSuggerimento(s);
+    input.value = `${prima}${scelta}; `;
     chiudi();
     input.focus();
     // Il campo è cambiato: il controllo pre-invio si azzera (nessun riquadro si
@@ -310,8 +316,9 @@ export function collegaCampoDestinatario(input, opzioni = {}) {
         (s, i) =>
           `<div class="cmp-sugg-voce${i === sel ? " cmp-sugg-voce--sel" : ""}" role="option" data-i="${i}">` +
           `<span class="cmp-sugg-nome">${fuga((s.nome || "").trim() || s.email)}</span>` +
-          `<span class="cmp-sugg-mail">&lt;${fuga(s.email)}&gt;</span>` +
+          (s.email ? `<span class="cmp-sugg-mail">&lt;${fuga(s.email)}&gt;</span>` : "") +
           (s.origine === "messaggi" ? `<span class="cmp-sugg-origine">già visto</span>` : "") +
+          (s.origine === "gruppo" ? `<span class="cmp-sugg-origine">gruppo</span>` : "") +
           `</div>`,
       )
       .join("");
@@ -473,6 +480,7 @@ function markup() {
       <button type="button" class="rubrica-btn" data-az="elimina">Elimina</button>
       <button type="button" class="rubrica-btn" data-az="importa">Importa vCard…</button>
       <button type="button" class="rubrica-btn" data-az="esporta">Esporta in vCard</button>
+      <button type="button" class="rubrica-btn" data-az="gruppi">Gruppi…</button>
     </div>
     <div class="rubrica-corpo">
       <div class="rubrica-lista" id="rubrica-lista" role="listbox" aria-label="Contatti"></div>
@@ -492,7 +500,8 @@ function markup() {
  * - `onImporta(testoVcf)` → esito; `onEsporta()` → percorso del file;
  * - `onApriComposizione(email)` → apre una nuova composizione (doppio clic);
  * - `focusRicerca` vero → il fuoco va nel campo di ricerca (voce "Trova contatto");
- * - `ricercaIniziale` → testo già scritto nel campo di ricerca (prove visive).
+ * - `ricercaIniziale` → testo già scritto nel campo di ricerca (prove visive);
+ * - `gruppi` → opzioni della finestra «Gruppi» (`onElenco`, `onSalva`, `onElimina`).
  */
 export function apriRubrica(opzioni = {}) {
   document.querySelectorAll(".rubrica-overlay").forEach((el) => el.remove());
@@ -726,6 +735,9 @@ export function apriRubrica(opzioni = {}) {
         } catch (e) {
           nota(`Esportazione non riuscita: ${e && e.message ? e.message : e}`, true);
         }
+      } else if (az === "gruppi") {
+        // Blocco U4: la finestra dei gruppi (col kernel se il chiamante lo collega).
+        apriGruppi(opzioni.gruppi || {});
       }
     });
   });

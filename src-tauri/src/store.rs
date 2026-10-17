@@ -356,6 +356,14 @@ CREATE TABLE IF NOT EXISTS ai_audit (
 CREATE TABLE IF NOT EXISTS mittenti_bloccati (
   indirizzo TEXT PRIMARY KEY, aggiunto INTEGER DEFAULT 0);
 
+CREATE TABLE IF NOT EXISTS gruppi (
+  id INTEGER PRIMARY KEY, nome TEXT NOT NULL, creato INTEGER NOT NULL DEFAULT 0,
+  modificato INTEGER NOT NULL DEFAULT 0);
+
+CREATE TABLE IF NOT EXISTS gruppi_membri (
+  gruppo_id INTEGER NOT NULL, posizione INTEGER NOT NULL, email TEXT NOT NULL,
+  PRIMARY KEY (gruppo_id, email));
+
 CREATE TABLE IF NOT EXISTS contatti (
   id INTEGER PRIMARY KEY, nome TEXT NOT NULL DEFAULT '', cognome TEXT NOT NULL DEFAULT '',
   email TEXT NOT NULL UNIQUE, telefono TEXT NOT NULL DEFAULT '', azienda TEXT NOT NULL DEFAULT '',
@@ -1546,6 +1554,93 @@ impl Store {
             |row| row.get(0),
         )?;
         Ok((id, false))
+    }
+
+    // -----------------------------------------------------------------------
+    // Gruppi di contatti (blocco U): nome unico (senza distinzione fra maiuscole
+    // e minuscole) e indirizzi dei membri nell'ordine in cui sono stati scritti.
+    // -----------------------------------------------------------------------
+
+    /// Tutti i gruppi, in ordine alfabetico, ciascuno coi suoi membri.
+    pub fn gruppi(&self) -> Result<Vec<crate::contatti::Gruppo>> {
+        let mut stmt = self.conn.prepare("SELECT id, nome FROM gruppi ORDER BY lower(nome)")?;
+        let righe: Vec<(i64, String)> = stmt
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<std::result::Result<_, _>>()?;
+        let mut membri = self
+            .conn
+            .prepare("SELECT email FROM gruppi_membri WHERE gruppo_id = ?1 ORDER BY posizione")?;
+        let mut out = Vec::with_capacity(righe.len());
+        for (id, nome) in righe {
+            let elenco: Vec<String> = membri
+                .query_map(params![id], |r| r.get(0))?
+                .collect::<std::result::Result<_, _>>()?;
+            out.push(crate::contatti::Gruppo { id: Some(id), nome, membri: elenco });
+        }
+        Ok(out)
+    }
+
+    /// Salva un gruppo (nuovo, o quello con `id`): nome obbligatorio e unico,
+    /// membri in minuscolo senza vuoti né doppioni. Restituisce l'id.
+    pub fn gruppo_salva(&self, g: &crate::contatti::Gruppo) -> Result<i64> {
+        let nome = g.nome.trim();
+        if nome.is_empty() {
+            return Err(StoreError::Contatto("il gruppo deve avere un nome".to_string()));
+        }
+        let altro: Option<(i64, String)> = self
+            .conn
+            .query_row(
+                "SELECT id, nome FROM gruppi WHERE lower(nome) = lower(?1) AND id != ?2",
+                params![nome, g.id.unwrap_or(-1)],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .optional()?;
+        if let Some((_, esistente)) = altro {
+            return Err(StoreError::Contatto(format!("esiste già un gruppo «{esistente}»")));
+        }
+        let mut membri: Vec<String> = Vec::new();
+        for m in &g.membri {
+            let m = m.trim().to_ascii_lowercase();
+            if !m.is_empty() && !membri.contains(&m) {
+                membri.push(m);
+            }
+        }
+        let adesso = adesso_unix();
+        let esiste = match g.id {
+            Some(id) => self
+                .conn
+                .query_row("SELECT id FROM gruppi WHERE id = ?1", params![id], |r| r.get::<_, i64>(0))
+                .optional()?,
+            None => None,
+        };
+        let id = match esiste {
+            Some(id) => {
+                self.conn.execute(
+                    "UPDATE gruppi SET nome = ?2, modificato = ?3 WHERE id = ?1",
+                    params![id, nome, adesso],
+                )?;
+                id
+            }
+            None => self.conn.query_row(
+                "INSERT INTO gruppi (nome, creato, modificato) VALUES (?1, ?2, ?2) RETURNING id",
+                params![nome, adesso],
+                |r| r.get(0),
+            )?,
+        };
+        self.conn.execute("DELETE FROM gruppi_membri WHERE gruppo_id = ?1", params![id])?;
+        for (posizione, email) in membri.iter().enumerate() {
+            self.conn.execute(
+                "INSERT INTO gruppi_membri (gruppo_id, posizione, email) VALUES (?1, ?2, ?3)",
+                params![id, posizione as i64, email],
+            )?;
+        }
+        Ok(id)
+    }
+
+    /// Elimina un gruppo e i suoi membri. Restituisce quanti gruppi ha tolto.
+    pub fn gruppo_elimina(&self, id: i64) -> Result<usize> {
+        self.conn.execute("DELETE FROM gruppi_membri WHERE gruppo_id = ?1", params![id])?;
+        Ok(self.conn.execute("DELETE FROM gruppi WHERE id = ?1", params![id])?)
     }
 
     /// Elimina il contatto con l'id indicato. Restituisce quante righe ha rimosso
